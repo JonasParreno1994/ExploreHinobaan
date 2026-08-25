@@ -1,0 +1,95 @@
+import { useForm } from '@inertiajs/react';
+import { FormEventHandler, useRef } from 'react';
+
+// Components...
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+import HeadingSmall from '@/components/heading-small';
+
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { TriangleAlert } from 'lucide-react';
+
+export default function DeleteUser() {
+    const passwordInput = useRef<HTMLInputElement>(null);
+    const { data, setData, delete: destroy, processing, reset, errors, clearErrors } = useForm({ password: '' });
+
+    const deleteUser: FormEventHandler = (e) => {
+        e.preventDefault();
+
+        destroy(route('profile.destroy'), {
+            preserveScroll: true,
+            onSuccess: () => closeModal(),
+            onError: () => passwordInput.current?.focus(),
+            onFinish: () => reset(),
+        });
+    };
+
+    const closeModal = () => {
+        clearErrors();
+        reset();
+    };
+
+    return (
+        <div className="bg-card overflow-hidden rounded-2xl border border-red-200 shadow-sm dark:border-red-900/70">
+            <div className="flex gap-3 border-b border-red-100 px-6 py-5 dark:border-red-900/70">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-300">
+                    <TriangleAlert className="size-5" />
+                </div>
+                <HeadingSmall title="Delete account" description="Permanently delete your account and all associated data." />
+            </div>
+            <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-muted-foreground max-w-md text-sm">
+                    This action cannot be undone. Please download or save anything you want to keep first.
+                </p>
+
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="destructive">Delete account</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogTitle>Are you sure you want to delete your account?</DialogTitle>
+                        <DialogDescription>
+                            Once your account is deleted, all of its resources and data will also be permanently deleted. Please enter your password
+                            to confirm you would like to permanently delete your account.
+                        </DialogDescription>
+                        <form className="space-y-6" onSubmit={deleteUser}>
+                            <div className="grid gap-2">
+                                <Label htmlFor="password" className="sr-only">
+                                    Password
+                                </Label>
+
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    name="password"
+                                    ref={passwordInput}
+                                    value={data.password}
+                                    onChange={(e) => setData('password', e.target.value)}
+                                    placeholder="Password"
+                                    autoComplete="current-password"
+                                />
+
+                                <InputError message={errors.password} />
+                            </div>
+
+                            <DialogFooter>
+                                <DialogClose asChild>
+                                    <Button variant="secondary" onClick={closeModal}>
+                                        Cancel
+                                    </Button>
+                                </DialogClose>
+
+                                <Button variant="destructive" disabled={processing} asChild>
+                                    <button type="submit">Delete account</button>
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+            </div>
+        </div>
+    );
+}

@@ -1,0 +1,25 @@
+<?php
+
+namespace App\Models;
+
+use Database\Factories\HeaderSettingFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+
+class HeaderSetting extends Model
+{
+    /** @use HasFactory<HeaderSettingFactory> */
+    use HasFactory;
+
+    protected $fillable = ['name', 'site_name', 'tagline', 'logo_path', 'login_label', 'register_label', 'status'];
+
+    protected $appends = ['logo_url'];
+
+    protected $attributes = ['login_label' => 'Login', 'register_label' => 'Register', 'status' => 'active'];
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        return $this->logo_path ? Storage::disk('public')->url($this->logo_path) : null;
+    }
+}
