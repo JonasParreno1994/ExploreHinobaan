@@ -4,6 +4,16 @@ import { useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { FormEvent } from 'react';
 
+interface ServiceSessionData {
+    id?: number;
+    name: string;
+    start_time: string;
+    end_time: string;
+    price: string;
+    capacity: string;
+    is_active: boolean;
+}
+
 export interface ServiceData {
     id?: number;
     enterprise_id: string;
@@ -17,12 +27,15 @@ export interface ServiceData {
     quantity: string;
     amenities: string[];
     reservation_required: boolean;
+    reservation_mode: string;
+    pool_type: string;
     check_in_time: string;
     check_out_time: string;
     duration_minutes: string;
     status: string;
     main_image?: File | null;
     gallery_images?: File[];
+    sessions: ServiceSessionData[];
 }
 export default function ServiceForm({
     service,
@@ -47,13 +60,50 @@ export default function ServiceForm({
         quantity: String(service?.quantity ?? 1),
         amenities: service?.amenities ?? [],
         reservation_required: service?.reservation_required ?? true,
+        reservation_mode: service?.reservation_mode ?? '',
+        pool_type: service?.pool_type ?? '',
         check_in_time: service?.check_in_time?.slice(0, 5) ?? '',
         check_out_time: service?.check_out_time?.slice(0, 5) ?? '',
         duration_minutes: String(service?.duration_minutes ?? ''),
         status: service?.status ?? 'draft',
         main_image: null,
         gallery_images: [],
+        sessions: service?.sessions ?? [],
     });
+    const selectedType = serviceTypes.find((type) => String(type.id) === form.data.service_type_id)?.name.toLowerCase() ?? '';
+    const isRoom = selectedType.includes('room');
+    const isCottage = selectedType.includes('cottage');
+    const isPool = selectedType.includes('pool');
+
+    function selectServiceType(serviceTypeId: string): void {
+        const typeName = serviceTypes.find((type) => String(type.id) === serviceTypeId)?.name.toLowerCase() ?? '';
+        form.setData((data) => ({
+            ...data,
+            service_type_id: serviceTypeId,
+            reservation_mode: typeName.includes('room')
+                ? 'overnight'
+                : typeName.includes('cottage')
+                  ? 'day'
+                  : typeName.includes('pool')
+                    ? 'session'
+                    : data.reservation_mode,
+            pricing_unit: typeName.includes('room')
+                ? 'per_night'
+                : typeName.includes('cottage')
+                  ? 'per_day'
+                  : typeName.includes('pool')
+                    ? 'per_session'
+                    : data.pricing_unit,
+            quantity: typeName.includes('pool') ? '1' : data.quantity,
+        }));
+    }
+
+    function addSession(): void {
+        form.setData('sessions', [
+            ...form.data.sessions,
+            { name: '', start_time: '', end_time: '', price: form.data.price, capacity: form.data.capacity, is_active: true },
+        ]);
+    }
     function submit(e: FormEvent) {
         e.preventDefault();
         if (service?.id) {
@@ -95,7 +145,7 @@ export default function ServiceForm({
                     Service type
                     <select
                         value={form.data.service_type_id}
-                        onChange={(e) => form.setData('service_type_id', e.target.value)}
+                        onChange={(e) => selectServiceType(e.target.value)}
                         className="h-12 rounded-xl border px-4 font-normal"
                     >
                         <option value="">Select type</option>
@@ -109,6 +159,45 @@ export default function ServiceForm({
                 </label>
                 {field('name', 'Service name')}
                 {field('price', 'Price', 'number')}
+                {(isRoom || isCottage || isPool) && (
+                    <label className="grid gap-2 text-sm font-bold">
+                        Reservation mode
+                        <select
+                            value={form.data.reservation_mode}
+                            onChange={(e) => form.setData('reservation_mode', e.target.value)}
+                            className="h-12 rounded-xl border px-4 font-normal"
+                        >
+                            {(isRoom ? ['overnight'] : isCottage ? ['day', 'timeslot'] : ['session', 'day']).map((mode) => (
+                                <option key={mode} value={mode}>
+                                    {mode[0].toUpperCase() + mode.slice(1)}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                )}
+                {isPool && (
+                    <label className="grid gap-2 text-sm font-bold">
+                        Pool type
+                        <select
+                            value={form.data.pool_type}
+                            onChange={(e) => {
+                                const poolType = e.target.value;
+                                form.setData((data) => ({
+                                    ...data,
+                                    pool_type: poolType,
+                                    reservation_mode: poolType === 'private' ? 'session' : 'day',
+                                    pricing_unit: poolType === 'private' ? 'per_session' : 'per_person',
+                                    quantity: poolType === 'private' ? '1' : data.quantity,
+                                }));
+                            }}
+                            className="h-12 rounded-xl border px-4 font-normal"
+                        >
+                            <option value="">Select pool type</option>
+                            <option value="private">Private / Exclusive</option>
+                            <option value="shared">Shared / Public</option>
+                        </select>
+                    </label>
+                )}
                 <label className="grid gap-2 text-sm font-bold">
                     Pricing unit
                     <select
@@ -123,12 +212,88 @@ export default function ServiceForm({
                         ))}
                     </select>
                 </label>
-                {field('quantity', 'Available quantity', 'number')}
-                {field('capacity', 'Guest capacity', 'number')}
+                {field('quantity', isRoom ? 'Number of rooms' : isCottage ? 'Number of cottages' : 'Available quantity', 'number')}
+                {field(
+                    'capacity',
+                    isRoom
+                        ? 'Maximum guests per room'
+                        : isCottage
+                          ? 'Maximum guests per cottage'
+                          : isPool
+                            ? 'Maximum pool capacity'
+                            : 'Guest capacity',
+                    'number',
+                )}
                 {field('duration_minutes', 'Duration in minutes', 'number')}
                 {field('check_in_time', 'Check-in time', 'time')}
                 {field('check_out_time', 'Check-out time', 'time')}
             </div>
+            {isPool && form.data.pool_type === 'private' && (
+                <section className="rounded-2xl border border-teal-100 bg-teal-50/50 p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h3 className="font-extrabold text-[#0F766E]">Pool sessions</h3>
+                            <p className="text-sm text-[#64748B]">Set bookable schedules, prices, and capacity.</p>
+                        </div>
+                        <Button type="button" variant="outline" onClick={addSession}>
+                            Add session
+                        </Button>
+                    </div>
+                    <div className="mt-4 grid gap-4">
+                        {form.data.sessions.map((session, index) => (
+                            <div key={index} className="grid gap-3 rounded-xl bg-white p-4 md:grid-cols-5">
+                                {(['name', 'start_time', 'end_time', 'price', 'capacity'] as const).map((key) => (
+                                    <label key={key} className="grid gap-1 text-xs font-bold capitalize">
+                                        {key.replace('_', ' ')}
+                                        <input
+                                            type={key.includes('time') ? 'time' : key === 'name' ? 'text' : 'number'}
+                                            value={session[key]}
+                                            onChange={(e) =>
+                                                form.setData(
+                                                    'sessions',
+                                                    form.data.sessions.map((item, itemIndex) =>
+                                                        itemIndex === index ? { ...item, [key]: e.target.value } : item,
+                                                    ),
+                                                )
+                                            }
+                                            className="h-10 rounded-lg border px-3 font-normal"
+                                        />
+                                    </label>
+                                ))}
+                                <div className="flex items-center gap-3 md:col-span-5">
+                                    <label className="flex items-center gap-2 text-sm">
+                                        <input
+                                            type="checkbox"
+                                            checked={session.is_active}
+                                            onChange={(e) =>
+                                                form.setData(
+                                                    'sessions',
+                                                    form.data.sessions.map((item, itemIndex) =>
+                                                        itemIndex === index ? { ...item, is_active: e.target.checked } : item,
+                                                    ),
+                                                )
+                                            }
+                                        />{' '}
+                                        Active
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            form.setData(
+                                                'sessions',
+                                                form.data.sessions.filter((_, itemIndex) => itemIndex !== index),
+                                            )
+                                        }
+                                        className="text-sm font-bold text-red-600"
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
             <label className="grid gap-2 text-sm font-bold">
                 Short description
                 <textarea

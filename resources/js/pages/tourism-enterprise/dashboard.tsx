@@ -1,3 +1,5 @@
+import { SiteBrand } from '@/components/site-brand';
+import { PartnerNotificationDropdown } from '@/components/tourism-enterprise/partner-notification-dropdown';
 import { Button } from '@/components/ui/button';
 import { SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
@@ -14,9 +16,10 @@ import {
     LayoutDashboard,
     LogOut,
     MapPin,
+    Package,
     ShieldCheck,
+    ShoppingBag,
     Users,
-    Waves,
 } from 'lucide-react';
 
 interface Enterprise {
@@ -57,6 +60,25 @@ interface RecentReservation {
     items: { service: { name: string } }[];
 }
 
+interface ProductStatistics {
+    products: number;
+    published_products: number;
+    orders: number;
+    pending_orders: number;
+    completed_orders: number;
+    sales_revenue: number;
+}
+
+interface RecentProductOrder {
+    id: number;
+    order_number: string;
+    customer_name: string;
+    total_amount: string;
+    status: string;
+    enterprise: { business_name: string };
+    items: { product_name: string; quantity: number }[];
+}
+
 const statusStyles: Record<string, string> = {
     approved: 'bg-teal-50 text-[#0F766E] ring-teal-200',
     pending: 'bg-amber-50 text-amber-700 ring-amber-200',
@@ -69,13 +91,35 @@ export default function PartnerDashboard({
     statistics,
     reservationTrend,
     recentReservations,
+    isLocalProductProducer,
+    productStatistics,
+    productOrderTrend,
+    recentProductOrders,
 }: {
     enterprises: Enterprise[];
     statistics: Statistics;
     reservationTrend: { label: string; value: number }[];
     recentReservations: RecentReservation[];
+    isLocalProductProducer: boolean;
+    productStatistics: ProductStatistics;
+    productOrderTrend: { label: string; value: number }[];
+    recentProductOrders: RecentProductOrder[];
 }) {
-    const { auth } = usePage<SharedData>().props;
+    const { auth, partnerWorkspace } = usePage<SharedData>().props;
+    const activityTrend = isLocalProductProducer ? productOrderTrend : reservationTrend;
+    const activityCards = isLocalProductProducer
+        ? [
+              [productStatistics.products, 'Total products', Package, 'text-[#F97316]', 'bg-orange-50'],
+              [productStatistics.pending_orders, 'Pending orders', Clock3, 'text-amber-600', 'bg-amber-50'],
+              [productStatistics.completed_orders, 'Completed orders', ShoppingBag, 'text-[#0F766E]', 'bg-teal-50'],
+              [`₱${productStatistics.sales_revenue.toLocaleString('en-PH')}`, 'Sales revenue', DollarSign, 'text-sky-700', 'bg-sky-50'],
+          ]
+        : [
+              [statistics.reservations, 'Total reservations', CalendarDays, 'text-[#F97316]', 'bg-orange-50'],
+              [statistics.pending_reservations, 'Pending requests', Clock3, 'text-amber-600', 'bg-amber-50'],
+              [statistics.accommodated_guests, 'Guests accommodated', Users, 'text-[#0F766E]', 'bg-teal-50'],
+              [`₱${statistics.confirmed_revenue.toLocaleString('en-PH')}`, 'Confirmed revenue', DollarSign, 'text-sky-700', 'bg-sky-50'],
+          ];
 
     return (
         <div className="min-h-screen bg-[#FFFBF5] text-[#1F2937]">
@@ -84,18 +128,13 @@ export default function PartnerDashboard({
             <header className="sticky top-0 z-30 border-b border-orange-100 bg-white/95 shadow-sm backdrop-blur-xl">
                 <div className="mx-auto flex h-18 max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
                     <Link href={route('partner.dashboard')} className="flex items-center gap-3">
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-[#F97316] text-white">
-                            <Waves className="size-5" />
-                        </span>
-                        <span>
-                            <strong className="block leading-tight">Explore Hinoba-an</strong>
-                            <small className="text-[10px] font-bold tracking-wider text-[#0F766E] uppercase">Enterprise Partner Portal</small>
-                        </span>
+                        <SiteBrand subtitle="Enterprise Partner Portal" compact />
                     </Link>
                     <div className="flex items-center gap-2">
+                        <PartnerNotificationDropdown />
                         <span className="hidden text-right sm:block">
                             <strong className="block text-sm">{auth.user.name}</strong>
-                            <small className="text-[#64748B]">Tourism Enterprise</small>
+                            <small className="text-[#64748B]">{isLocalProductProducer ? 'Local Product Producer' : 'Tourism Enterprise'}</small>
                         </span>
                         <Button variant="outline" size="sm" asChild>
                             <Link href={route('logout')} method="post" as="button">
@@ -125,18 +164,54 @@ export default function PartnerDashboard({
                         >
                             <FileText className="size-5 text-[#F97316]" /> Documents
                         </Link>
-                        <Link
-                            href={route('partner.services.index')}
-                            className="mt-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[#64748B] transition hover:bg-[#FFF3E6] hover:text-[#F97316]"
-                        >
-                            <Building2 className="size-5 text-[#F97316]" /> Services & Facilities
-                        </Link>
-                        <Link
-                            href={route('partner.reservations.index')}
-                            className="mt-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[#64748B] transition hover:bg-[#FFF3E6] hover:text-[#F97316]"
-                        >
-                            <CalendarDays className="size-5 text-[#F97316]" /> Reservations
-                        </Link>
+                        {!isLocalProductProducer && (
+                            <>
+                                <Link
+                                    href={route('partner.services.index')}
+                                    className="mt-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[#64748B] transition hover:bg-[#FFF3E6] hover:text-[#F97316]"
+                                >
+                                    <Building2 className="size-5 text-[#F97316]" /> Services & Facilities
+                                </Link>
+                                <Link
+                                    href={route('partner.reservations.index')}
+                                    className="mt-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[#64748B] transition hover:bg-[#FFF3E6] hover:text-[#F97316]"
+                                >
+                                    <CalendarDays className="size-5 text-[#F97316]" /> Reservations
+                                </Link>
+                            </>
+                        )}
+                        {partnerWorkspace?.can_report_arrivals && (
+                            <>
+                                <Link
+                                    href={route('partner.tourist-arrivals.index')}
+                                    className="mt-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[#64748B] transition hover:bg-[#FFF3E6] hover:text-[#F97316]"
+                                >
+                                    <Users className="size-5 text-[#F97316]" /> Tourist Arrivals
+                                </Link>
+                                <Link
+                                    href={route('partner.daily-reports.index')}
+                                    className="mt-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[#64748B] transition hover:bg-[#FFF3E6] hover:text-[#F97316]"
+                                >
+                                    <CalendarCheck2 className="size-5 text-[#F97316]" /> Daily Tourist Reports
+                                </Link>
+                            </>
+                        )}
+                        {isLocalProductProducer && (
+                            <>
+                                <Link
+                                    href={route('partner.products.index')}
+                                    className="mt-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[#64748B] transition hover:bg-[#FFF3E6] hover:text-[#F97316]"
+                                >
+                                    <Package className="size-5 text-[#F97316]" /> Local Products
+                                </Link>
+                                <Link
+                                    href={route('partner.product-orders.index')}
+                                    className="mt-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[#64748B] transition hover:bg-[#FFF3E6] hover:text-[#F97316]"
+                                >
+                                    <ShoppingBag className="size-5 text-[#F97316]" /> Product Orders
+                                </Link>
+                            </>
+                        )}
                         <div className="mt-5 rounded-2xl bg-[#FFF3E6] p-4 text-xs leading-5 text-[#64748B]">
                             <ShieldCheck className="mb-2 size-5 text-[#0F766E]" /> Your listings are reviewed by the Hinoba-an Tourism Office before
                             public publication.
@@ -146,26 +221,19 @@ export default function PartnerDashboard({
 
                 <main className="min-w-0">
                     <section className="overflow-hidden rounded-3xl bg-[#0F766E] p-7 text-white shadow-xl sm:p-9">
-                        <p className="text-xs font-bold tracking-[.18em] text-[#FBBF24] uppercase">Tourism enterprise dashboard</p>
+                        <p className="text-xs font-bold tracking-[.18em] text-[#FBBF24] uppercase">
+                            {isLocalProductProducer ? 'Local product producer dashboard' : 'Tourism enterprise dashboard'}
+                        </p>
                         <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">Welcome, {auth.user.name}</h1>
                         <p className="mt-3 max-w-2xl text-sm leading-6 text-teal-50/90">
-                            Monitor your business registration, review progress, and submitted compliance documents.
+                            {isLocalProductProducer
+                                ? 'Manage your local products, monitor customer orders, and track sales from one workspace.'
+                                : 'Monitor your business registration, review progress, and submitted compliance documents.'}
                         </p>
                     </section>
 
                     <section className="mt-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
-                        {[
-                            [statistics.reservations, 'Total reservations', CalendarDays, 'text-[#F97316]', 'bg-orange-50'],
-                            [statistics.pending_reservations, 'Pending requests', Clock3, 'text-amber-600', 'bg-amber-50'],
-                            [statistics.accommodated_guests, 'Guests accommodated', Users, 'text-[#0F766E]', 'bg-teal-50'],
-                            [
-                                `₱${statistics.confirmed_revenue.toLocaleString('en-PH')}`,
-                                'Confirmed revenue',
-                                DollarSign,
-                                'text-sky-700',
-                                'bg-sky-50',
-                            ],
-                        ].map(([value, label, Icon, color, background]) => (
+                        {activityCards.map(([value, label, Icon, color, background]) => (
                             <article key={String(label)} className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm">
                                 <span className={`flex size-10 items-center justify-center rounded-xl ${background as string}`}>
                                     <Icon className={`size-5 ${color as string}`} />
@@ -180,11 +248,11 @@ export default function PartnerDashboard({
                         <article className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm">
                             <div className="flex items-center gap-3">
                                 <BarChart3 className="size-5 text-[#F97316]" />
-                                <h2 className="font-extrabold">Reservation trend</h2>
+                                <h2 className="font-extrabold">{isLocalProductProducer ? 'Order trend' : 'Reservation trend'}</h2>
                             </div>
                             <div className="mt-7 flex h-44 items-end gap-3">
-                                {reservationTrend.map((month) => {
-                                    const maximum = Math.max(1, ...reservationTrend.map((item) => item.value));
+                                {activityTrend.map((month) => {
+                                    const maximum = Math.max(1, ...activityTrend.map((item) => item.value));
                                     return (
                                         <div key={month.label} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
                                             <span className="text-xs font-bold">{month.value}</span>
@@ -201,36 +269,68 @@ export default function PartnerDashboard({
                         <article className="overflow-hidden rounded-3xl border border-orange-100 bg-white shadow-sm">
                             <div className="flex items-center justify-between border-b border-orange-100 p-6">
                                 <div className="flex items-center gap-3">
-                                    <CalendarCheck2 className="size-5 text-[#0F766E]" />
-                                    <h2 className="font-extrabold">Recent reservations</h2>
+                                    {isLocalProductProducer ? (
+                                        <ShoppingBag className="size-5 text-[#0F766E]" />
+                                    ) : (
+                                        <CalendarCheck2 className="size-5 text-[#0F766E]" />
+                                    )}
+                                    <h2 className="font-extrabold">{isLocalProductProducer ? 'Recent product orders' : 'Recent reservations'}</h2>
                                 </div>
-                                <Link href={route('partner.reservations.index')} className="text-sm font-bold text-[#F97316]">
+                                <Link
+                                    href={route(isLocalProductProducer ? 'partner.product-orders.index' : 'partner.reservations.index')}
+                                    className="text-sm font-bold text-[#F97316]"
+                                >
                                     View all
                                 </Link>
                             </div>
                             <div className="divide-y divide-orange-50">
-                                {recentReservations.map((reservation) => (
-                                    <Link
-                                        key={reservation.id}
-                                        href={route('partner.reservations.show', reservation.id)}
-                                        className="flex items-center justify-between gap-4 p-4 transition hover:bg-[#FFFBF5]"
-                                    >
-                                        <div>
-                                            <strong className="block text-sm">{reservation.customer_name}</strong>
-                                            <span className="text-xs text-[#64748B]">
-                                                {reservation.items[0]?.service.name ?? 'Service'} · {reservation.reservation_number}
-                                            </span>
-                                        </div>
-                                        <div className="text-right">
-                                            <strong className="block text-sm text-[#F97316]">
-                                                ₱{Number(reservation.total_amount).toLocaleString('en-PH')}
-                                            </strong>
-                                            <span className="text-xs text-[#64748B] capitalize">{reservation.status}</span>
-                                        </div>
-                                    </Link>
-                                ))}
-                                {recentReservations.length === 0 && (
-                                    <p className="p-8 text-center text-sm text-[#64748B]">No reservations have been submitted yet.</p>
+                                {isLocalProductProducer
+                                    ? recentProductOrders.map((order) => (
+                                          <Link
+                                              key={order.id}
+                                              href={route('partner.product-orders.show', order.id)}
+                                              className="flex items-center justify-between gap-4 p-4 transition hover:bg-[#FFFBF5]"
+                                          >
+                                              <div>
+                                                  <strong className="block text-sm">{order.customer_name}</strong>
+                                                  <span className="text-xs text-[#64748B]">
+                                                      {order.items[0]?.product_name ?? 'Local product'} · {order.order_number}
+                                                  </span>
+                                              </div>
+                                              <div className="text-right">
+                                                  <strong className="block text-sm text-[#F97316]">
+                                                      ₱{Number(order.total_amount).toLocaleString('en-PH')}
+                                                  </strong>
+                                                  <span className="text-xs text-[#64748B] capitalize">{order.status.replaceAll('_', ' ')}</span>
+                                              </div>
+                                          </Link>
+                                      ))
+                                    : recentReservations.map((reservation) => (
+                                          <Link
+                                              key={reservation.id}
+                                              href={route('partner.reservations.show', reservation.id)}
+                                              className="flex items-center justify-between gap-4 p-4 transition hover:bg-[#FFFBF5]"
+                                          >
+                                              <div>
+                                                  <strong className="block text-sm">{reservation.customer_name}</strong>
+                                                  <span className="text-xs text-[#64748B]">
+                                                      {reservation.items[0]?.service.name ?? 'Service'} · {reservation.reservation_number}
+                                                  </span>
+                                              </div>
+                                              <div className="text-right">
+                                                  <strong className="block text-sm text-[#F97316]">
+                                                      ₱{Number(reservation.total_amount).toLocaleString('en-PH')}
+                                                  </strong>
+                                                  <span className="text-xs text-[#64748B] capitalize">{reservation.status}</span>
+                                              </div>
+                                          </Link>
+                                      ))}
+                                {(isLocalProductProducer ? recentProductOrders.length === 0 : recentReservations.length === 0) && (
+                                    <p className="p-8 text-center text-sm text-[#64748B]">
+                                        {isLocalProductProducer
+                                            ? 'No product orders have been submitted yet.'
+                                            : 'No reservations have been submitted yet.'}
+                                    </p>
                                 )}
                             </div>
                         </article>

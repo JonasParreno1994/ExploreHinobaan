@@ -1,4 +1,5 @@
 import InputError from '@/components/input-error';
+import { SiteLogo } from '@/components/site-brand';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -57,9 +58,7 @@ export default function PartnerLogin({ status, canResetPassword }: { status?: st
                 </Link>
                 <div className="w-full max-w-md">
                     <div className="text-center">
-                        <span className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-[#F97316] text-white">
-                            <Building2 className="size-8" />
-                        </span>
+                        <SiteLogo className="mx-auto size-20" />
                         <h2 className="mt-6 text-3xl font-extrabold">Tourism Enterprise Portal</h2>
                         <p className="mt-2 text-[#64748B]">Sign in to your partner account</p>
                     </div>

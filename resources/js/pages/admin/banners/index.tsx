@@ -11,7 +11,6 @@ export interface Banner {
     images: string[];
     image_urls: string[];
     sentences: string[];
-    text_content: { header_1: string | null; header_2: string | null; header_3: string | null } | null;
     status: 'active' | 'inactive';
     created_at: string;
     updated_at: string;

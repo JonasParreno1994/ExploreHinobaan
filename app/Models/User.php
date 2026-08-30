@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -24,6 +25,9 @@ class User extends Authenticatable
         'name',
         'email',
         'phone',
+        'country',
+        'province',
+        'city_municipality',
         'role_id',
         'password',
         'status',
@@ -84,5 +88,20 @@ class User extends Authenticatable
     public function enterprisesApproved(): HasMany
     {
         return $this->hasMany(Enterprise::class, 'approved_by');
+    }
+
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(Reservation::class, 'customer_id');
+    }
+
+    public function touristVerification(): HasOne
+    {
+        return $this->hasOne(TouristVerification::class);
+    }
+
+    public function isTourist(): bool
+    {
+        return $this->role?->name === 'Tourist';
     }
 }

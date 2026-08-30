@@ -81,7 +81,9 @@ test('the newest active header configuration is displayed on the landing page', 
     $this->get(route('home'))->assertInertia(fn (Assert $page) => $page
         ->component('welcome')
         ->where('headerSetting.id', $activeHeader->id)
-        ->where('headerSetting.site_name', 'Public tourism header'));
+        ->where('headerSetting.site_name', 'Public tourism header')
+        ->where('branding.id', $activeHeader->id)
+        ->where('branding.site_name', 'Public tourism header'));
 });
 
 test('administrators can upload a header logo', function () {
@@ -99,4 +101,16 @@ test('administrators can upload a header logo', function () {
 
     expect($header->logo_path)->not->toBeNull();
     Storage::disk('public')->assertExists($header->logo_path);
+});
+
+test('the active header logo is used as the browser favicon', function () {
+    $header = HeaderSetting::factory()->create([
+        'logo_path' => 'header-logos/site-logo.png',
+        'status' => 'active',
+    ]);
+
+    $this->get(route('home'))
+        ->assertSuccessful()
+        ->assertSee('id="site-favicon"', false)
+        ->assertSee($header->logo_url, false);
 });

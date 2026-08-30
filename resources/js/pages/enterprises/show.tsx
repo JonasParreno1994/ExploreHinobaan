@@ -1,6 +1,9 @@
+import { BackToLanding } from '@/components/back-to-landing';
 import DestinationMap from '@/components/landing/destination-map';
+import { ReviewSection, type PublicReview, type ReviewSummary } from '@/components/reviews/review-section';
+import { SiteBrand } from '@/components/site-brand';
 import { Head, Link } from '@inertiajs/react';
-import { CheckCircle2, Globe, Mail, MapPin, Phone, Waves } from 'lucide-react';
+import { CheckCircle2, Globe, Mail, MapPin, Phone } from 'lucide-react';
 interface Service {
     id: number;
     slug: string;
@@ -33,16 +36,16 @@ interface Enterprise {
     services: Service[];
     gallery_images: { id: number; image_url: string; caption: string | null }[];
 }
-export default function Show({ enterprise: e }: { enterprise: Enterprise }) {
+export default function Show({ enterprise: e, reviews, reviewSummary }: { enterprise: Enterprise; reviews: PublicReview[]; reviewSummary: ReviewSummary }) {
     return (
         <div className="min-h-screen bg-[#FFFBF5] text-[#1F2937]">
             <Head title={e.business_name} />
             <header className="border-b bg-white">
-                <div className="mx-auto flex h-18 max-w-7xl items-center px-5">
+                <div className="mx-auto flex h-18 max-w-7xl items-center justify-between gap-4 px-5">
                     <Link href={route('home')} className="flex items-center gap-2 font-bold">
-                        <Waves className="text-[#F97316]" />
-                        Explore Hinoba-an
+                        <SiteBrand compact />
                     </Link>
+                    <BackToLanding compact />
                 </div>
             </header>
             <section className="relative h-[430px] overflow-hidden">
@@ -129,6 +132,7 @@ export default function Show({ enterprise: e }: { enterprise: Enterprise }) {
                         <Contact icon={Globe} label="Website" value={e.website} href={e.website ?? undefined} />
                     </div>
                 </section>
+                <ReviewSection targetType="enterprise" targetId={e.id} reviews={reviews} summary={reviewSummary} />
             </main>
         </div>
     );

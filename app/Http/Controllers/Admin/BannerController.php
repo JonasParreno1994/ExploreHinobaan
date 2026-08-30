@@ -19,7 +19,7 @@ class BannerController extends Controller
      */
     public function index(): Response
     {
-        return Inertia::render('admin/banners/index', ['banners' => Banner::query()->with('textContent')->latest('id')->paginate(10)]);
+        return Inertia::render('admin/banners/index', ['banners' => Banner::query()->latest('id')->paginate(10)]);
     }
 
     /**
@@ -48,7 +48,7 @@ class BannerController extends Controller
      */
     public function show(Banner $banner): Response
     {
-        return Inertia::render('admin/banners/show', ['banner' => $banner->load('textContent')]);
+        return Inertia::render('admin/banners/show', ['banner' => $banner]);
     }
 
     /**
@@ -56,7 +56,7 @@ class BannerController extends Controller
      */
     public function edit(Banner $banner): Response
     {
-        return Inertia::render('admin/banners/edit', ['banner' => $banner->load('textContent')]);
+        return Inertia::render('admin/banners/edit', ['banner' => $banner]);
     }
 
     /**

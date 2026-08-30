@@ -12,7 +12,7 @@ class ReservationItem extends Model
     /** @use HasFactory<ReservationItemFactory> */
     use HasFactory;
 
-    protected $fillable = ['reservation_id', 'enterprise_service_id', 'quantity', 'number_of_guests', 'check_in', 'check_out', 'reservation_date', 'start_time', 'end_time', 'purpose', 'unit_price', 'subtotal'];
+    protected $fillable = ['reservation_id', 'enterprise_service_id', 'service_session_id', 'quantity', 'number_of_guests', 'adults', 'children', 'check_in', 'check_out', 'reservation_date', 'start_time', 'end_time', 'purpose', 'unit_price', 'subtotal'];
 
     public function reservation(): BelongsTo
     {
@@ -22,6 +22,11 @@ class ReservationItem extends Model
     public function service(): BelongsTo
     {
         return $this->belongsTo(EnterpriseService::class, 'enterprise_service_id');
+    }
+
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(ServiceSession::class, 'service_session_id');
     }
 
     protected function casts(): array

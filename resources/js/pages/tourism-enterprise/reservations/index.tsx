@@ -9,7 +9,15 @@ interface Reservation {
     status: string;
     created_at: string;
     enterprise: { business_name: string };
-    items: { service: { name: string } }[];
+    items: {
+        quantity: number;
+        number_of_guests: number;
+        check_in: string | null;
+        check_out: string | null;
+        reservation_date: string | null;
+        service: { name: string; service_type: { name: string } | null };
+        session: { name: string } | null;
+    }[];
 }
 export default function Index({ reservations }: { reservations: { data: Reservation[] } }) {
     return (
@@ -21,7 +29,7 @@ export default function Index({ reservations }: { reservations: { data: Reservat
                 <table className="w-full text-left text-sm">
                     <thead className="bg-[#FFF3E6] text-xs uppercase">
                         <tr>
-                            {['Reservation #', 'Customer', 'Service', 'Amount', 'Status', ''].map((x) => (
+                            {['Reservation #', 'Customer', 'Service / Type', 'Schedule', 'Guests / Qty.', 'Amount', 'Status', ''].map((x) => (
                                 <th key={x} className="px-5 py-4">
                                     {x}
                                 </th>
@@ -33,7 +41,18 @@ export default function Index({ reservations }: { reservations: { data: Reservat
                             <tr key={r.id} className="border-t">
                                 <td className="px-5 py-4 font-bold">{r.reservation_number}</td>
                                 <td className="px-5 py-4">{r.customer_name}</td>
-                                <td className="px-5 py-4">{r.items[0]?.service.name}</td>
+                                <td className="px-5 py-4">
+                                    <strong className="block">{r.items[0]?.service.name}</strong>
+                                    <small>{r.items[0]?.service.service_type?.name ?? 'Service'}</small>
+                                </td>
+                                <td className="px-5 py-4">
+                                    {r.items[0]?.check_in
+                                        ? `${r.items[0].check_in} – ${r.items[0].check_out}`
+                                        : `${r.items[0]?.reservation_date ?? ''}${r.items[0]?.session ? ` · ${r.items[0].session.name}` : ''}`}
+                                </td>
+                                <td className="px-5 py-4">
+                                    {r.items[0]?.number_of_guests} / {r.items[0]?.quantity}
+                                </td>
                                 <td className="px-5 py-4">₱{Number(r.total_amount).toLocaleString('en-PH')}</td>
                                 <td className="px-5 py-4 capitalize">{r.status}</td>
                                 <td className="px-5 py-4">

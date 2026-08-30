@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\AuditLog;
+use App\Services\Security\SecurityEventRecorder;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -50,6 +52,19 @@ class LoginRequest extends FormRequest
         if (! Auth::attempt($credentials, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
+            AuditLog::create([
+                'actor_name' => 'Unauthenticated visitor',
+                'actor_email' => $this->string('email')->lower()->toString(),
+                'action' => 'failed_login',
+                'method' => $this->method(),
+                'route_name' => $this->route()?->getName(),
+                'path' => $this->path(),
+                'ip_address' => $this->ip(),
+                'user_agent' => $this->userAgent(),
+                'metadata' => ['response_status' => 422],
+            ]);
+            app(SecurityEventRecorder::class)->record($this, 'failed_login', 'denied');
+
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),
             ]);
@@ -70,6 +85,7 @@ class LoginRequest extends FormRequest
         }
 
         event(new Lockout($this));
+        app(SecurityEventRecorder::class)->record($this, 'rate_limited', 'blocked');
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
 

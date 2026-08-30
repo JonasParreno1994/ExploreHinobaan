@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Enterprise;
 use App\Models\EnterpriseType;
+use App\Services\ReviewPresenter;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -34,7 +35,7 @@ class EnterpriseController extends Controller
         ]);
     }
 
-    public function show(Enterprise $enterprise): Response
+    public function show(Enterprise $enterprise, ReviewPresenter $reviews): Response
     {
         abort_unless($enterprise->application_status === 'approved', 404);
         $enterprise->load([
@@ -42,6 +43,6 @@ class EnterpriseController extends Controller
             'services' => fn ($query) => $query->where('status', 'published')->with('serviceType:id,name')->withCount('images'),
         ]);
 
-        return Inertia::render('enterprises/show', ['enterprise' => $enterprise]);
+        return Inertia::render('enterprises/show', ['enterprise' => $enterprise, ...$reviews->for($enterprise)]);
     }
 }

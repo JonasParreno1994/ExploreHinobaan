@@ -1,8 +1,9 @@
 import InputError from '@/components/input-error';
+import { SiteLogo } from '@/components/site-brand';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Eye, EyeOff, LoaderCircle, LockKeyhole, Mail, ShieldCheck, Waves } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, LoaderCircle, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
 interface LoginForm {
@@ -38,9 +39,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 <div className="absolute inset-0 bg-gradient-to-br from-[#0F766E]/95 via-[#0F766E]/80 to-slate-950/65" />
 
                 <Link href={route('home')} className="relative z-10 flex items-center gap-3 p-10 text-white">
-                    <span className="flex size-12 items-center justify-center rounded-2xl bg-[#F97316] shadow-lg shadow-orange-950/20">
-                        <Waves className="size-6" />
-                    </span>
+                    <SiteLogo className="size-14" />
                     <span>
                         <strong className="block text-lg leading-tight">Explore Hinoba-an</strong>
                         <small className="text-xs font-semibold tracking-[.18em] text-teal-100 uppercase">Tourism Portal</small>
@@ -67,8 +66,8 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                     >
                         <ArrowLeft className="size-4" /> Back to tourism portal
                     </Link>
-                    <span className="flex size-10 items-center justify-center rounded-xl bg-[#F97316] text-white lg:hidden">
-                        <Waves className="size-5" />
+                    <span className="lg:hidden">
+                        <SiteLogo className="size-11" />
                     </span>
                 </div>
 

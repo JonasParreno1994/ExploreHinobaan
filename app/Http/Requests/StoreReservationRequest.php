@@ -28,8 +28,12 @@ class StoreReservationRequest extends FormRequest
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_email' => ['required', 'email', 'max:255'],
             'customer_contact' => ['required', 'string', 'max:30'],
+            'customer_address' => ['nullable', 'string', 'max:255'],
             'quantity' => ['required', 'integer', 'min:1'],
             'number_of_guests' => ['required', 'integer', 'min:1'],
+            'adults' => ['nullable', 'integer', 'min:1'],
+            'children' => ['nullable', 'integer', 'min:0'],
+            'service_session_id' => ['nullable', 'integer', 'exists:service_sessions,id'],
             'check_in' => ['nullable', 'required_without:reservation_date', 'date', 'after_or_equal:today'],
             'check_out' => ['nullable', 'required_with:check_in', 'date', 'after:check_in'],
             'reservation_date' => ['nullable', 'required_without:check_in', 'date', 'after_or_equal:today'],
@@ -37,6 +41,7 @@ class StoreReservationRequest extends FormRequest
             'end_time' => ['nullable', 'date_format:H:i', 'after:start_time'],
             'purpose' => ['nullable', 'string', 'max:255'],
             'special_request' => ['nullable', 'string', 'max:2000'],
+            'payment_proof' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
     }
 }

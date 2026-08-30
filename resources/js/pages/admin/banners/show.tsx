@@ -29,18 +29,6 @@ export default function ShowBanner({ banner }: { banner: Banner }) {
                             ))}
                         </div>
                     </section>
-                    <section className="grid gap-3 rounded-xl border p-5">
-                        <h3 className="font-semibold">Carousel overlay text</h3>
-                        <p className="bg-muted rounded-lg p-3 text-sm">
-                            <strong>Header 1:</strong> {banner.text_content?.header_1 || 'Not set'}
-                        </p>
-                        <p className="bg-muted rounded-lg p-3 text-sm">
-                            <strong>Header 2:</strong> {banner.text_content?.header_2 || 'Not set'}
-                        </p>
-                        <p className="bg-muted rounded-lg p-3 text-sm">
-                            <strong>Header 3:</strong> {banner.text_content?.header_3 || 'Not set'}
-                        </p>
-                    </section>
                 </CardContent>
             </Card>
         </AdminLayout>

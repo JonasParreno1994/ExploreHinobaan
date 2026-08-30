@@ -3,13 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Banner;
+use App\Models\BannerText;
 use App\Models\Barangay;
 use App\Models\Destination;
 use App\Models\Enterprise;
 use App\Models\Event;
 use App\Models\FooterSetting;
 use App\Models\HeaderSetting;
+use App\Models\LocalProduct;
 use App\Models\TourismCategory;
+use App\Models\WhyVisitSection;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,15 +23,11 @@ class LandingPageController extends Controller
     {
         $heroSlides = Banner::query()
             ->where('status', 'active')
-            ->with('textContent')
             ->latest('id')
             ->get()
             ->flatMap(fn (Banner $banner) => collect($banner->image_urls)->map(fn (string $imageUrl, int $index): array => [
                 'id' => $banner->id.'-'.$index,
                 'image' => $imageUrl,
-                'header_1' => $banner->textContent?->header_1,
-                'header_2' => $banner->textContent?->header_2,
-                'header_3' => $banner->textContent?->header_3,
             ]))
             ->values();
 
@@ -115,11 +114,13 @@ class LandingPageController extends Controller
 
         return Inertia::render('welcome', [
             'heroSlides' => $heroSlides,
+            'heroText' => BannerText::query()->latest('id')->first(),
             'categories' => $categories,
             'destinations' => $destinations,
             'accommodations' => $accommodations,
             'events' => $events,
             'enterprises' => $enterprises,
+            'localProducts' => LocalProduct::query()->where('status', 'published')->whereHas('enterprise', fn ($query) => $query->where('application_status', 'approved'))->with(['enterprise:id,business_name', 'category:id,name'])->orderByDesc('is_featured')->latest()->limit(4)->get(),
             'mapLocations' => $destinations->whereNotNull('latitude')->whereNotNull('longitude')->values(),
             'statistics' => [
                 'destinations' => Destination::query()->where('status', 'published')->count(),
@@ -129,6 +130,7 @@ class LandingPageController extends Controller
             ],
             'footerSetting' => FooterSetting::query()->where('status', 'active')->latest('id')->first(),
             'headerSetting' => HeaderSetting::query()->where('status', 'active')->latest('id')->first(),
+            'whyVisitSection' => WhyVisitSection::query()->where('status', 'active')->latest('id')->first(),
         ]);
     }
 }

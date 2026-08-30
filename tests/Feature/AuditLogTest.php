@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AuditLog;
+use App\Models\Role;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -9,7 +10,7 @@ test('guests cannot view audit logs', function () {
 });
 
 test('authenticated changes are recorded without sensitive values', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->for(Role::factory()->create(['name' => 'Administrator']))->create();
 
     $this->actingAs($user)->post('/admin/roles', [
         'name' => 'Audited Role',
@@ -28,7 +29,7 @@ test('authenticated changes are recorded without sensitive values', function () 
 });
 
 test('successful login and logout are recorded', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->for(Role::factory()->create(['name' => 'Administrator']))->create();
 
     $this->post('/login', ['email' => $user->email, 'password' => 'password']);
     $this->post('/logout');
@@ -38,7 +39,7 @@ test('successful login and logout are recorded', function () {
 });
 
 test('authenticated users can view and search audit logs', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->for(Role::factory()->create(['name' => 'Administrator']))->create();
     AuditLog::factory()->create(['actor_name' => 'Maria Auditor', 'actor_email' => 'maria@example.com']);
 
     $this->actingAs($user)

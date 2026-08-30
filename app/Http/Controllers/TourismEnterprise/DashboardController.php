@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\TourismEnterprise;
 
 use App\Http\Controllers\Controller;
+use App\Models\LocalProduct;
+use App\Models\LocalProductOrder;
 use App\Models\Reservation;
 use App\Models\ReservationItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -23,6 +26,8 @@ class DashboardController extends Controller
             ->get();
 
         $enterpriseIds = $enterprises->pluck('id');
+        $isLocalProductProducer = $enterprises->isNotEmpty()
+            && $enterprises->every(fn ($enterprise): bool => in_array($enterprise->enterpriseType?->name, ['Local Product Seller', 'Local Product Producer'], true));
         $reservations = Reservation::query()->whereIn('enterprise_id', $enterpriseIds);
         $reservationCounts = (clone $reservations)->selectRaw('status, count(*) as aggregate')->groupBy('status')->pluck('aggregate', 'status');
         $accommodatedStatuses = ['confirmed', 'completed'];
@@ -58,6 +63,46 @@ class DashboardController extends Controller
                 ->latest()
                 ->limit(5)
                 ->get(),
+            'isLocalProductProducer' => $isLocalProductProducer,
+            'productStatistics' => $this->productStatistics($enterpriseIds),
+            'productOrderTrend' => $this->productOrderTrend($enterpriseIds),
+            'recentProductOrders' => LocalProductOrder::query()
+                ->whereIn('enterprise_id', $enterpriseIds)
+                ->with(['enterprise:id,business_name', 'items:id,local_product_order_id,product_name,quantity'])
+                ->latest()
+                ->limit(5)
+                ->get(),
         ]);
+    }
+
+    /** @param Collection<int, int> $enterpriseIds */
+    private function productStatistics(Collection $enterpriseIds): array
+    {
+        $orders = LocalProductOrder::query()->whereIn('enterprise_id', $enterpriseIds);
+
+        return [
+            'products' => LocalProduct::query()->whereIn('enterprise_id', $enterpriseIds)->count(),
+            'published_products' => LocalProduct::query()->whereIn('enterprise_id', $enterpriseIds)->where('status', 'published')->count(),
+            'orders' => (clone $orders)->count(),
+            'pending_orders' => (clone $orders)->where('status', 'pending')->count(),
+            'completed_orders' => (clone $orders)->where('status', 'completed')->count(),
+            'sales_revenue' => (float) (clone $orders)->whereIn('status', ['accepted', 'preparing', 'ready_for_pickup', 'out_for_delivery', 'completed'])->sum('total_amount'),
+        ];
+    }
+
+    /** @param Collection<int, int> $enterpriseIds */
+    private function productOrderTrend(Collection $enterpriseIds): array
+    {
+        $monthlyOrders = LocalProductOrder::query()
+            ->whereIn('enterprise_id', $enterpriseIds)
+            ->where('created_at', '>=', now()->startOfMonth()->subMonths(5))
+            ->get(['id', 'created_at'])
+            ->groupBy(fn (LocalProductOrder $order): string => $order->created_at->format('Y-m'));
+
+        return collect(range(5, 0))->map(function (int $monthsAgo) use ($monthlyOrders): array {
+            $month = now()->startOfMonth()->subMonths($monthsAgo);
+
+            return ['label' => $month->format('M'), 'value' => $monthlyOrders->get($month->format('Y-m'), collect())->count()];
+        })->all();
     }
 }

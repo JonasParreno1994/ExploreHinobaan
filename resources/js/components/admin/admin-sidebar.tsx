@@ -1,15 +1,14 @@
 import { SidebarSection, type AdminNavigationItem } from '@/components/admin/sidebar-section';
+import { SiteBrand } from '@/components/site-brand';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail } from '@/components/ui/sidebar';
 import { type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import {
     Activity,
-    BarChart3,
     Boxes,
     Building2,
     CalendarDays,
     ChartNoAxesCombined,
-    FileChartColumn,
     GalleryHorizontalEnd,
     Heart,
     House,
@@ -17,14 +16,13 @@ import {
     LayoutDashboard,
     Map,
     MapPin,
-    MapPinned,
     Megaphone,
-    Palmtree,
-    QrCode,
     ScrollText,
     Settings,
+    ShieldAlert,
     ShieldCheck,
     ShoppingBasket,
+    Sparkles,
     Star,
     Tags,
     Type,
@@ -59,24 +57,16 @@ const navigationSections: NavigationSection[] = [
         label: 'Tourist Management',
         items: [
             { title: 'Tourists', href: '/admin/tourists', icon: Users },
-            { title: 'Reservations', href: '/admin/reservations', icon: CalendarDays },
+            { title: 'Tourist Verifications', href: '/admin/tourist-verifications', icon: ShieldCheck },
+            { title: 'Tourist Arrivals', href: '/admin/tourist-arrivals', icon: ChartNoAxesCombined },
             { title: 'Reviews', href: '/admin/reviews', icon: Star },
             { title: 'Wishlists', href: '/admin/wishlists', icon: Heart },
-        ],
-    },
-    {
-        label: 'Visitor Monitoring',
-        items: [
-            { title: 'Visitor Reports', href: '/admin/visitor-reports', icon: FileChartColumn },
-            { title: 'QR Check-ins', href: '/admin/qr-check-ins', icon: QrCode },
-            { title: 'Tourist Tracker', href: '/admin/tourist-tracker', icon: MapPinned },
         ],
     },
     {
         label: 'Reports & Analytics',
         items: [
             { title: 'Tourism Analytics', href: '/admin/tourism-analytics', icon: ChartNoAxesCombined },
-            { title: 'Visitor Analytics', href: '/admin/visitor-analytics', icon: BarChart3 },
             { title: 'Generate Reports', href: '/admin/reports', icon: ScrollText },
         ],
     },
@@ -88,6 +78,7 @@ const navigationSections: NavigationSection[] = [
             { title: 'Text', href: '/admin/text', icon: Type },
             { title: 'Gallery', href: '/admin/gallery', icon: GalleryHorizontalEnd },
             { title: 'Announcements', href: '/admin/announcements', icon: Megaphone },
+            { title: 'Why Visit', href: '/admin/why-visit', icon: Sparkles },
             { title: 'LGU Information', href: '/admin/lgu-information', icon: Map },
         ],
     },
@@ -98,6 +89,7 @@ const navigationSections: NavigationSection[] = [
             { title: 'Users', href: '/admin/users', icon: UserRoundCheck },
             { title: 'Roles', href: '/admin/roles', icon: ShieldCheck },
             { title: 'Audit Logs', href: '/admin/audit-logs', icon: Activity },
+            { title: 'Security Monitoring', href: '/admin/security-monitoring', icon: ShieldAlert },
             { title: 'Settings', href: '/admin/settings', icon: Settings },
         ],
     },
@@ -108,7 +100,9 @@ export function AdminSidebar() {
     const isAdministrator = auth.user.role?.name === 'Administrator';
     const visibleSections = navigationSections.map((section) => ({
         ...section,
-        items: section.items.filter((item) => item.href !== '/admin/settings' || isAdministrator),
+        items: section.items.filter(
+            (item) => !['/admin/settings', '/admin/security-monitoring'].includes(item.href) || isAdministrator,
+        ),
     }));
 
     return (
@@ -118,15 +112,7 @@ export function AdminSidebar() {
                     <SidebarMenuItem>
                         <SidebarMenuButton asChild size="lg" tooltip="Explore Hinoba-an">
                             <Link href="/dashboard" prefetch>
-                                <span className="flex aspect-square size-9 items-center justify-center rounded-xl bg-emerald-700 text-white shadow-sm">
-                                    <Palmtree className="size-5" />
-                                </span>
-                                <span className="grid flex-1 leading-tight">
-                                    <span className="truncate text-sm font-bold tracking-wide text-emerald-950 dark:text-emerald-50">
-                                        EXPLORE HINOBA-AN
-                                    </span>
-                                    <span className="truncate text-xs text-emerald-800/60 dark:text-emerald-200/60">Tourism Administration</span>
-                                </span>
+                                <SiteBrand subtitle="Tourism Administration" compact />
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>

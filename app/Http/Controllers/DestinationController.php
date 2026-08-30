@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Destination;
+use App\Services\ReviewPresenter;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DestinationController extends Controller
 {
-    public function show(Destination $destination): Response
+    public function show(Destination $destination, ReviewPresenter $reviews): Response
     {
         abort_unless($destination->status === 'published', 404);
 
@@ -36,6 +37,7 @@ class DestinationController extends Controller
         return Inertia::render('destinations/show', [
             'destination' => $destination,
             'relatedDestinations' => $relatedDestinations,
+            ...$reviews->for($destination),
         ]);
     }
 }

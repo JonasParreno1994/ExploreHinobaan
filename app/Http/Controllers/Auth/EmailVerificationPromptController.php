@@ -15,8 +15,10 @@ class EmailVerificationPromptController extends Controller
      */
     public function __invoke(Request $request): Response|RedirectResponse
     {
+        $fallback = $request->user()->isTourist() ? route('tourist.verification.show', absolute: false) : route('dashboard', absolute: false);
+
         return $request->user()->hasVerifiedEmail()
-                    ? redirect()->intended(route('dashboard', absolute: false))
+                    ? redirect()->intended($fallback)
                     : Inertia::render('auth/verify-email', ['status' => $request->session()->get('status')]);
     }
 }

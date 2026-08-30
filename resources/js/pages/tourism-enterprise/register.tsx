@@ -1,4 +1,5 @@
 import { ImageUploader } from '@/components/admin/image-uploader';
+import { BackToLanding } from '@/components/back-to-landing';
 import InputError from '@/components/input-error';
 import { LocationPicker } from '@/components/map/location-picker';
 import { Button } from '@/components/ui/button';
@@ -86,11 +87,14 @@ export default function PartnerRegister({ enterpriseTypes, barangays }: { enterp
                     <Link href={route('partner.login')} className="flex items-center gap-2 text-sm font-bold text-[#0F766E]">
                         <ArrowLeft className="size-4" /> Partner Login
                     </Link>
-                    <div className="flex items-center gap-2 font-bold">
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-[#F97316] text-white">
-                            <Building2 />
-                        </span>
-                        <span className="hidden sm:inline">Explore Hinoba-an Partner Registration</span>
+                    <div className="flex items-center gap-2">
+                        <div className="hidden items-center gap-2 font-bold md:flex">
+                            <span className="flex size-10 items-center justify-center rounded-xl bg-[#F97316] text-white">
+                                <Building2 />
+                            </span>
+                            <span>Explore Hinoba-an Partner Registration</span>
+                        </div>
+                        <BackToLanding compact />
                     </div>
                 </div>
             </header>

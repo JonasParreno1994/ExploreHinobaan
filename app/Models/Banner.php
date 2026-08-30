@@ -5,7 +5,6 @@ namespace App\Models;
 use Database\Factories\BannerFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 
 class Banner extends Model
@@ -22,11 +21,6 @@ class Banner extends Model
     protected function casts(): array
     {
         return ['images' => 'array', 'sentences' => 'array'];
-    }
-
-    public function textContent(): HasOne
-    {
-        return $this->hasOne(BannerText::class);
     }
 
     /** @return list<string> */

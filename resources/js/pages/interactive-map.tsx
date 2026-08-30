@@ -1,7 +1,9 @@
+import { BackToLanding } from '@/components/back-to-landing';
+import { SiteBrand } from '@/components/site-brand';
 import { Head, Link } from '@inertiajs/react';
 import { divIcon, latLngBounds } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ArrowLeft, Expand, ExternalLink, Layers3, LocateFixed, MapPin, Navigation, Phone, Search, SlidersHorizontal, Waves, X } from 'lucide-react';
+import { Expand, ExternalLink, Layers3, LocateFixed, MapPin, Navigation, Phone, Search, SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 
@@ -162,19 +164,13 @@ export default function InteractiveMap({ places }: { places: Place[] }) {
             <header className="fixed inset-x-0 top-0 z-[1200] h-16 border-b border-orange-100 bg-white/95 shadow-sm backdrop-blur-xl">
                 <nav className="mx-auto flex h-full items-center justify-between px-4 lg:px-6">
                     <Link href={route('home')} className="flex items-center gap-3 font-bold">
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-[#F97316] text-white">
-                            <Waves className="size-5" />
-                        </span>
-                        <span>Explore Hinoba-an</span>
+                        <SiteBrand compact />
                     </Link>
                     <div className="text-center">
                         <p className="hidden text-sm font-bold sm:block">Interactive Tourism Map</p>
                         <p className="hidden text-xs text-[#64748B] md:block">Discover destinations and tourism businesses</p>
                     </div>
-                    <Link href={route('home')} className="inline-flex items-center gap-2 text-sm font-semibold text-[#0F766E]">
-                        <ArrowLeft className="size-4" />
-                        <span className="hidden sm:inline">Back to Home</span>
-                    </Link>
+                    <BackToLanding compact />
                 </nav>
             </header>
 

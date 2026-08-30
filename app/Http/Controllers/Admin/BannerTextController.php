@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateBannerTextRequest;
-use App\Models\Banner;
+use App\Models\BannerText;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,20 +14,14 @@ class BannerTextController extends Controller
     public function index(): Response
     {
         return Inertia::render('admin/banner-texts/index', [
-            'banners' => Banner::query()->with('textContent')->latest('id')->paginate(10),
+            'text' => BannerText::query()->latest('id')->first(),
         ]);
     }
 
-    public function edit(Banner $banner): Response
+    public function update(UpdateBannerTextRequest $request): RedirectResponse
     {
-        return Inertia::render('admin/banner-texts/edit', [
-            'banner' => $banner->load('textContent'),
-        ]);
-    }
-
-    public function update(UpdateBannerTextRequest $request, Banner $banner): RedirectResponse
-    {
-        $banner->textContent()->updateOrCreate([], $request->validated());
+        $text = BannerText::query()->latest('id')->first() ?? new BannerText;
+        $text->fill($request->validated())->save();
 
         return to_route('admin.text.index')->with('success', 'Text updated successfully.');
     }

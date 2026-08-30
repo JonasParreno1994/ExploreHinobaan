@@ -1,4 +1,5 @@
 import TourismMap, { type MapLocation } from '@/components/landing/tourism-map';
+import { SiteBrand } from '@/components/site-brand';
 import { Head, Link } from '@inertiajs/react';
 import {
     ArrowRight,
@@ -11,6 +12,7 @@ import {
     Compass,
     Facebook,
     Fish,
+    Heart,
     Instagram,
     MapPin,
     Menu,
@@ -31,6 +33,8 @@ import { FormEvent, useEffect, useState } from 'react';
 interface HeroSlide {
     id: string;
     image: string;
+}
+interface HeroText {
     header_1: string | null;
     header_2: string | null;
     header_3: string | null;
@@ -86,6 +90,17 @@ interface TourismEnterprise {
     barangay: { name: string } | null;
     services: { id: number; name: string; price: string; pricing_unit: string }[];
 }
+interface LocalProduct {
+    id: number;
+    name: string;
+    slug: string;
+    price: string;
+    selling_unit: string;
+    main_image_url: string | null;
+    stock_quantity: number;
+    enterprise: { business_name: string };
+    category: { name: string };
+}
 interface Statistics {
     destinations: number;
     enterprises: number;
@@ -111,17 +126,26 @@ interface HeaderSetting {
     login_label: string;
     register_label: string;
 }
+interface WhyVisitSection {
+    eyebrow: string;
+    title: string;
+    subtitle: string | null;
+    cards: { title: string; description: string; icon: string }[];
+}
 interface WelcomeProps {
     heroSlides: HeroSlide[];
+    heroText: HeroText | null;
     categories: Category[];
     destinations: Destination[];
     accommodations: Accommodation[];
     events: TourismEvent[];
     enterprises: TourismEnterprise[];
+    localProducts: LocalProduct[];
     mapLocations: MapLocation[];
     statistics: Statistics;
     footerSetting: FooterSetting | null;
     headerSetting: HeaderSetting | null;
+    whyVisitSection: WhyVisitSection | null;
 }
 
 const heroImage = '/images/landing/hinobaan-hero.png';
@@ -147,12 +171,22 @@ const activities = [
     ['Camping', Trees, 'left center'],
     ['Nature Photography', Camera, 'center'],
 ];
-const reasons = [
-    ['Natural Wonders', Trees, 'Discover pristine beaches, caves, forests, mountains, and waterfalls.'],
-    ['Local Culture', Sparkles, 'Experience local traditions, festivals, cuisine, and heartfelt hospitality.'],
-    ['Adventure', Compass, 'Enjoy swimming, hiking, island exploration, snorkeling, and outdoor activities.'],
-    ['Peaceful Escape', Umbrella, 'Slow down in relaxing destinations away from crowded tourist areas.'],
+const reasonFallbacks = [
+    { title: 'Natural Wonders', icon: 'trees', description: 'Discover pristine beaches, caves, forests, mountains, and waterfalls.' },
+    { title: 'Local Culture', icon: 'sparkles', description: 'Experience local traditions, festivals, cuisine, and heartfelt hospitality.' },
+    { title: 'Adventure', icon: 'compass', description: 'Enjoy swimming, hiking, island exploration, snorkeling, and outdoor activities.' },
+    { title: 'Peaceful Escape', icon: 'umbrella', description: 'Slow down in relaxing destinations away from crowded tourist areas.' },
 ];
+const reasonIcons = {
+    trees: Trees,
+    sparkles: Sparkles,
+    compass: Compass,
+    umbrella: Umbrella,
+    waves: Waves,
+    mountain: Mountain,
+    heart: Heart,
+    camera: Camera,
+};
 
 function SectionHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
     return (
@@ -176,19 +210,23 @@ function EmptyState({ label }: { label: string }) {
 
 export default function Welcome({
     heroSlides,
+    heroText,
     categories,
     destinations,
     accommodations,
     events,
     enterprises,
+    localProducts,
     mapLocations,
     statistics,
     footerSetting,
     headerSetting,
+    whyVisitSection,
 }: WelcomeProps) {
     const [menuOpen, setMenuOpen] = useState(false);
     const [activeHeroSlide, setActiveHeroSlide] = useState(0);
-    const slides = heroSlides.length > 0 ? heroSlides : [{ id: 'fallback', image: heroImage, header_1: null, header_2: null, header_3: null }];
+    const slides = heroSlides.length > 0 ? heroSlides : [{ id: 'fallback', image: heroImage }];
+    const displayedReasons = whyVisitSection?.cards?.length ? whyVisitSection.cards : reasonFallbacks;
 
     useEffect(() => {
         if (slides.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -231,25 +269,7 @@ export default function Welcome({
                 <header className="fixed inset-x-0 top-0 z-[1000] border-b border-orange-100 bg-white/95 shadow-sm backdrop-blur-xl">
                     <nav className="mx-auto flex h-18 max-w-[1440px] items-center justify-between px-4 lg:px-6" aria-label="Primary navigation">
                         <a href="#home" className="flex shrink-0 items-center gap-2.5">
-                            {headerSetting?.logo_url ? (
-                                <img
-                                    src={headerSetting.logo_url}
-                                    alt={`${headerSetting.site_name} logo`}
-                                    className="size-10 rounded-xl bg-white object-contain p-1"
-                                />
-                            ) : (
-                                <span className="flex size-10 items-center justify-center rounded-xl bg-[#F97316] text-white">
-                                    <Waves className="size-5" />
-                                </span>
-                            )}
-                            <span className="leading-tight">
-                                <strong className="block text-sm text-[#1F2937] sm:text-base">
-                                    {headerSetting?.site_name ?? 'Explore Hinoba-an'}
-                                </strong>
-                                <small className="hidden text-[10px] font-semibold tracking-widest text-[#0F766E] uppercase sm:block">
-                                    {headerSetting?.tagline ?? 'Tourism Portal'}
-                                </small>
-                            </span>
+                            <SiteBrand compact />
                         </a>
                         <div className="hidden items-center gap-4 xl:flex">
                             {navItems.slice(0, 2).map(([label, href], index) => (
@@ -261,6 +281,12 @@ export default function Welcome({
                                     {label}
                                 </a>
                             ))}
+                            <Link
+                                href={route('local-products.index')}
+                                className="text-[13px] font-semibold text-[#1F2937] transition hover:text-[#F97316]"
+                            >
+                                Local Products
+                            </Link>
                             <div className="group relative">
                                 <button
                                     type="button"
@@ -325,6 +351,13 @@ export default function Welcome({
                                         {label}
                                     </a>
                                 ))}
+                                <Link
+                                    href={route('local-products.index')}
+                                    onClick={() => setMenuOpen(false)}
+                                    className="rounded-xl px-4 py-3 text-sm font-semibold hover:bg-orange-50 hover:text-[#F97316]"
+                                >
+                                    Local Products
+                                </Link>
                                 <div className="mt-2 rounded-2xl bg-[#FFF3E6] p-2">
                                     <p className="px-3 py-2 text-xs font-bold tracking-wider text-[#0F766E] uppercase">Explore</p>
                                     {exploreNavItems.map(([label, href]) => (
@@ -373,11 +406,11 @@ export default function Welcome({
                         <div className="relative mx-auto w-full max-w-7xl px-5 pb-36 sm:px-8">
                             <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-bold tracking-widest uppercase backdrop-blur">
                                 <MapPin className="size-4 text-[#FBBF24]" />
-                                {slides[activeHeroSlide]?.header_1 || 'Southern Negros Occidental'}
+                                {heroText?.header_1 || 'Southern Negros Occidental'}
                             </span>
                             <h1 className="mt-6 max-w-4xl text-5xl leading-[1.04] font-extrabold tracking-tight sm:text-6xl lg:text-7xl">
-                                {slides[activeHeroSlide]?.header_2 ? (
-                                    slides[activeHeroSlide].header_2
+                                {heroText?.header_2 ? (
+                                    heroText.header_2
                                 ) : (
                                     <>
                                         Discover the Beauty of <span className="text-[#FBBF24]">Hinoba-an</span>
@@ -385,7 +418,7 @@ export default function Welcome({
                                 )}
                             </h1>
                             <p className="mt-6 max-w-2xl text-base leading-8 text-white/85 sm:text-lg">
-                                {slides[activeHeroSlide]?.header_3 ||
+                                {heroText?.header_3 ||
                                     'Explore breathtaking beaches, hidden destinations, local experiences, accommodations, and unforgettable adventures in the southern paradise of Negros Occidental.'}
                             </p>
                             <div className="mt-8 flex flex-wrap gap-3">
@@ -567,22 +600,24 @@ export default function Welcome({
                     <section id="why-visit" className="bg-[#FFF3E6] px-5 py-24 sm:px-8">
                         <div className="mx-auto max-w-7xl">
                             <SectionHeading
-                                eyebrow="More than a destination"
-                                title="Why Visit Hinoba-an?"
-                                description="Nature, culture, adventure, and room to breathe—all in one welcoming municipality."
+                                eyebrow={whyVisitSection?.eyebrow ?? 'More than a destination'}
+                                title={whyVisitSection?.title ?? 'Why Visit Hinoba-an?'}
+                                description={
+                                    whyVisitSection?.subtitle ?? 'Nature, culture, adventure, and room to breathe—all in one welcoming municipality.'
+                                }
                             />
                             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-                                {reasons.map(([title, icon, description], index) => {
-                                    const Icon = icon as typeof Trees;
+                                {displayedReasons.map((reason, index) => {
+                                    const Icon = reasonIcons[reason.icon as keyof typeof reasonIcons] ?? Sparkles;
                                     return (
-                                        <div key={title as string} className="rounded-2xl bg-white p-6 shadow-sm">
+                                        <div key={`${reason.title}-${index}`} className="rounded-2xl bg-white p-6 shadow-sm">
                                             <span
                                                 className={`flex size-12 items-center justify-center rounded-xl ${index % 2 ? 'bg-teal-50 text-[#0F766E]' : 'bg-orange-50 text-[#F97316]'}`}
                                             >
                                                 <Icon className="size-6" />
                                             </span>
-                                            <h3 className="mt-5 text-lg font-bold">{title as string}</h3>
-                                            <p className="mt-2 text-sm leading-6 text-[#64748B]">{description as string}</p>
+                                            <h3 className="mt-5 text-lg font-bold">{reason.title}</h3>
+                                            <p className="mt-2 text-sm leading-6 text-[#64748B]">{reason.description}</p>
                                         </div>
                                     );
                                 })}
@@ -715,6 +750,51 @@ export default function Welcome({
                                 >
                                     View All Enterprises
                                 </Link>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="bg-[#FFF3E6] px-5 py-20 sm:px-8">
+                        <div className="mx-auto max-w-7xl">
+                            <div className="flex flex-wrap items-end justify-between gap-4">
+                                <div>
+                                    <p className="font-bold text-[#F97316]">SHOP LOCAL</p>
+                                    <h2 className="mt-2 text-3xl font-extrabold sm:text-4xl">Products Made in Hinoba-an</h2>
+                                    <p className="mt-2 text-[#64748B]">Support verified local producers and order authentic products.</p>
+                                </div>
+                                <Link
+                                    href={route('local-products.index')}
+                                    className="rounded-xl border border-[#F97316] px-5 py-3 font-bold text-[#F97316]"
+                                >
+                                    View All Products
+                                </Link>
+                            </div>
+                            <div className="mt-9 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                                {localProducts.length ? (
+                                    localProducts.map((product) => (
+                                        <Link
+                                            key={product.id}
+                                            href={route('local-products.show', product.slug)}
+                                            className="overflow-hidden rounded-3xl bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                                        >
+                                            <img
+                                                src={product.main_image_url ?? '/images/tourism-placeholder.svg'}
+                                                className="h-48 w-full object-cover"
+                                            />
+                                            <div className="p-5">
+                                                <span className="text-xs font-bold text-[#0F766E]">{product.category.name}</span>
+                                                <h3 className="mt-1 text-xl font-extrabold">{product.name}</h3>
+                                                <p className="mt-1 text-sm text-[#64748B]">{product.enterprise.business_name}</p>
+                                                <p className="mt-4 text-xl font-extrabold text-[#F97316]">
+                                                    ₱{Number(product.price).toLocaleString()}{' '}
+                                                    <small className="text-xs text-[#64748B]">/ {product.selling_unit}</small>
+                                                </p>
+                                            </div>
+                                        </Link>
+                                    ))
+                                ) : (
+                                    <EmptyState label="Local products" />
+                                )}
                             </div>
                         </div>
                     </section>
@@ -927,6 +1007,7 @@ export default function Welcome({
                                 <div className="mt-4 grid gap-3 text-sm text-white/70">
                                     <Link href={route('partner.register')}>Tourism Enterprise Registration</Link>
                                     <Link href={route('partner.login')}>Tourism Enterprise Login</Link>
+                                    <Link href={route('reservations.status.create')}>Check Reservation Status</Link>
                                     <Link href={route('interactive-map')}>Travel Information</Link>
                                     <a href="#why-visit">Tourism Guidelines</a>
                                 </div>

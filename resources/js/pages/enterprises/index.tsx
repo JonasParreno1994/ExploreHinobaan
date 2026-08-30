@@ -1,5 +1,7 @@
+import { BackToLanding } from '@/components/back-to-landing';
+import { SiteBrand } from '@/components/site-brand';
 import { Head, Link, router } from '@inertiajs/react';
-import { CheckCircle2, MapPin, Search, Waves } from 'lucide-react';
+import { CheckCircle2, MapPin, Search } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 interface Enterprise {
     id: number;
@@ -32,14 +34,14 @@ export default function Index({
             <header className="border-b bg-white">
                 <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-5">
                     <Link href={route('home')} className="flex items-center gap-2 font-bold">
-                        <span className="rounded-xl bg-[#F97316] p-2 text-white">
-                            <Waves />
-                        </span>
-                        Explore Hinoba-an
+                        <SiteBrand compact />
                     </Link>
-                    <Link href={route('partner.login')} className="rounded-xl bg-[#F97316] px-4 py-2 text-sm font-bold text-white">
-                        Be a Partner
-                    </Link>
+                    <div className="flex items-center gap-2">
+                        <BackToLanding compact />
+                        <Link href={route('partner.login')} className="rounded-xl bg-[#F97316] px-4 py-2.5 text-sm font-bold text-white">
+                            Be a Partner
+                        </Link>
+                    </div>
                 </div>
             </header>
             <main>

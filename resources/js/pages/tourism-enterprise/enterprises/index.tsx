@@ -1,6 +1,7 @@
 import PartnerLayout from '@/components/tourism-enterprise/partner-layout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { Building2, FileText, MapPin, Phone, Wrench } from 'lucide-react';
+import { FormEvent } from 'react';
 
 interface Enterprise {
     id: number;
@@ -19,6 +20,16 @@ interface Enterprise {
     services_count: number;
     reservations_count: number;
     enterprise_type: { name: string } | null;
+    reservation_fee: string | null;
+    gcash_qr_url: string | null;
+    order_setting: {
+        accepts_pickup: boolean;
+        accepts_delivery: boolean;
+        delivery_fee: string;
+        accepts_cash_on_pickup: boolean;
+        accepts_gcash: boolean;
+        estimated_preparation_days: number | null;
+    } | null;
 }
 
 export default function EnterpriseIndex({ enterprises }: { enterprises: Enterprise[] }) {
@@ -105,6 +116,8 @@ export default function EnterpriseIndex({ enterprises }: { enterprises: Enterpri
                                         </Link>
                                     )}
                                 </div>
+                                <PaymentSettings enterprise={enterprise} />
+                                <CommerceSettings enterprise={enterprise} />
                             </div>
                         </div>
                     </article>
@@ -116,5 +129,131 @@ export default function EnterpriseIndex({ enterprises }: { enterprises: Enterpri
                 )}
             </div>
         </PartnerLayout>
+    );
+}
+
+function CommerceSettings({ enterprise }: { enterprise: Enterprise }) {
+    const setting = enterprise.order_setting;
+    const form = useForm({
+        accepts_pickup: setting?.accepts_pickup ?? true,
+        accepts_delivery: setting?.accepts_delivery ?? false,
+        delivery_fee: setting?.delivery_fee ?? '0',
+        accepts_cash_on_pickup: setting?.accepts_cash_on_pickup ?? true,
+        accepts_gcash: setting?.accepts_gcash ?? false,
+        estimated_preparation_days: setting?.estimated_preparation_days ?? '',
+    });
+    return (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                form.post(route('partner.enterprises.commerce-settings', enterprise.id), { preserveScroll: true });
+            }}
+            className="mt-4 rounded-2xl border border-teal-100 bg-teal-50/50 p-4"
+        >
+            <h3 className="font-extrabold text-[#0F766E]">Local Product Order Settings</h3>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <label className="flex gap-2 text-sm font-semibold">
+                    <input type="checkbox" checked={form.data.accepts_pickup} onChange={(e) => form.setData('accepts_pickup', e.target.checked)} />{' '}
+                    Accept pickup
+                </label>
+                <label className="flex gap-2 text-sm font-semibold">
+                    <input
+                        type="checkbox"
+                        checked={form.data.accepts_delivery}
+                        onChange={(e) => form.setData('accepts_delivery', e.target.checked)}
+                    />{' '}
+                    Accept delivery
+                </label>
+                <label className="flex gap-2 text-sm font-semibold">
+                    <input
+                        type="checkbox"
+                        checked={form.data.accepts_cash_on_pickup}
+                        onChange={(e) => form.setData('accepts_cash_on_pickup', e.target.checked)}
+                    />{' '}
+                    Cash on pickup
+                </label>
+                <label className="flex gap-2 text-sm font-semibold">
+                    <input type="checkbox" checked={form.data.accepts_gcash} onChange={(e) => form.setData('accepts_gcash', e.target.checked)} />{' '}
+                    Accept GCash
+                </label>
+                <label className="text-sm font-semibold">
+                    Delivery fee
+                    <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={form.data.delivery_fee}
+                        onChange={(e) => form.setData('delivery_fee', e.target.value)}
+                        className="mt-1 h-10 w-full rounded-lg border bg-white px-3"
+                    />
+                </label>
+                <label className="text-sm font-semibold">
+                    Preparation days
+                    <input
+                        type="number"
+                        min="0"
+                        value={form.data.estimated_preparation_days}
+                        onChange={(e) => form.setData('estimated_preparation_days', e.target.value)}
+                        className="mt-1 h-10 w-full rounded-lg border bg-white px-3"
+                    />
+                </label>
+            </div>
+            <button disabled={form.processing} className="mt-3 rounded-lg bg-[#0F766E] px-4 py-2 text-sm font-bold text-white">
+                Save order settings
+            </button>
+        </form>
+    );
+}
+
+function PaymentSettings({ enterprise }: { enterprise: Enterprise }) {
+    const form = useForm({ reservation_fee: enterprise.reservation_fee ?? '', gcash_qr: null as File | null });
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        form.post(route('partner.enterprises.payment-settings', enterprise.id), {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => form.reset('gcash_qr'),
+        });
+    };
+    return (
+        <form onSubmit={submit} className="mt-6 grid gap-3 rounded-2xl bg-[#FFF3E6] p-4 sm:grid-cols-[1fr_1fr_auto]">
+            <label className="text-sm font-bold">
+                Reservation fee (optional)
+                <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.data.reservation_fee}
+                    onChange={(e) => form.setData('reservation_fee', e.target.value)}
+                    className="mt-1 h-11 w-full rounded-lg border bg-white px-3 font-normal"
+                />
+                {form.errors.reservation_fee && <span className="mt-1 block text-xs font-medium text-red-600">{form.errors.reservation_fee}</span>}
+            </label>
+            <label className="text-sm font-bold">
+                GCash QR (optional)
+                <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(e) => form.setData('gcash_qr', e.target.files?.[0] ?? null)}
+                    className="mt-1 block w-full text-xs"
+                />
+                <span className="mt-1 block text-xs font-normal text-[#64748B]">JPG, PNG, or WebP up to 5 MB.</span>
+                {form.errors.gcash_qr && <span className="mt-1 block text-xs font-medium text-red-600">{form.errors.gcash_qr}</span>}
+            </label>
+            <button disabled={form.processing} className="self-end rounded-lg bg-[#0F766E] px-4 py-3 text-sm font-bold text-white">
+                {form.processing ? 'Saving...' : 'Save payment settings'}
+            </button>
+            {form.recentlySuccessful && (
+                <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 sm:col-span-3">
+                    Reservation fee and GCash QR saved successfully.
+                </p>
+            )}
+            {enterprise.gcash_qr_url && (
+                <div className="sm:col-span-3">
+                    <p className="mb-2 text-xs font-semibold text-[#64748B]">Current GCash QR</p>
+                    <img src={enterprise.gcash_qr_url} alt="GCash QR" className="size-28 rounded-xl bg-white object-contain p-2" />
+                </div>
+            )}
+        </form>
     );
 }

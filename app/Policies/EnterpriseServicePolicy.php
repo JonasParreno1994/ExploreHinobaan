@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\EnterpriseService;
 use App\Models\User;
+use App\Services\Security\SecurityEventRecorder;
 
 class EnterpriseServicePolicy
 {
@@ -20,7 +21,13 @@ class EnterpriseServicePolicy
      */
     public function view(User $user, EnterpriseService $enterpriseService): bool
     {
-        return $enterpriseService->enterprise()->where('user_id', $user->id)->exists();
+        $isOwner = $enterpriseService->enterprise()->where('user_id', $user->id)->exists();
+
+        if (! $isOwner && request()->user()?->is($user)) {
+            app(SecurityEventRecorder::class)->record(request(), 'authorization_violation', 'denied', 'enterprise_service:'.$enterpriseService->id, ['owner_verification' => 'failed']);
+        }
+
+        return $isOwner;
     }
 
     /**

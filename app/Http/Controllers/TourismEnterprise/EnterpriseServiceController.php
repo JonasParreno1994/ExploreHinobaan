@@ -39,12 +39,13 @@ class EnterpriseServiceController extends Controller
         $paths = [];
         try {
             DB::transaction(function () use ($request, &$paths): void {
-                $data = Arr::except($request->validated(), ['main_image', 'gallery_images']);
+                $data = Arr::except($request->validated(), ['main_image', 'gallery_images', 'sessions']);
                 $data['slug'] = $this->uniqueSlug((int) $data['enterprise_id'], $data['name']);
                 if ($request->hasFile('main_image')) {
                     $data['main_image'] = $paths[] = $request->file('main_image')->store('enterprise-services', 'public');
                 }
                 $service = EnterpriseService::create($data);
+                $service->sessions()->createMany($request->validated('sessions', []));
                 foreach ($request->file('gallery_images', []) as $index => $image) {
                     $path = $paths[] = $image->store('enterprise-services/gallery', 'public');
                     $service->images()->create(['image_path' => $path, 'sort_order' => $index]);
@@ -62,12 +63,12 @@ class EnterpriseServiceController extends Controller
     {
         $this->authorize('update', $enterpriseService);
 
-        return Inertia::render('tourism-enterprise/services/edit', [...$this->formOptions($request), 'service' => $enterpriseService->load(['images', 'serviceType'])]);
+        return Inertia::render('tourism-enterprise/services/edit', [...$this->formOptions($request), 'service' => $enterpriseService->load(['images', 'serviceType', 'sessions'])]);
     }
 
     public function update(UpdateEnterpriseServiceRequest $request, EnterpriseService $enterpriseService): RedirectResponse
     {
-        $data = Arr::except($request->validated(), ['main_image', 'gallery_images']);
+        $data = Arr::except($request->validated(), ['main_image', 'gallery_images', 'sessions']);
         if ($request->hasFile('main_image')) {
             $oldImage = $enterpriseService->main_image;
             $data['main_image'] = $request->file('main_image')->store('enterprise-services', 'public');
@@ -76,6 +77,16 @@ class EnterpriseServiceController extends Controller
             }
         }
         $enterpriseService->update($data);
+        $sessionIds = [];
+        foreach ($request->validated('sessions', []) as $sessionData) {
+            $sessionId = Arr::pull($sessionData, 'id');
+            if ($sessionId && $enterpriseService->sessions()->whereKey($sessionId)->update($sessionData)) {
+                $sessionIds[] = $sessionId;
+            } else {
+                $sessionIds[] = $enterpriseService->sessions()->create($sessionData)->id;
+            }
+        }
+        $enterpriseService->sessions()->whereNotIn('id', $sessionIds)->update(['is_active' => false]);
         foreach ($request->file('gallery_images', []) as $index => $image) {
             $enterpriseService->images()->create(['image_path' => $image->store('enterprise-services/gallery', 'public'), 'sort_order' => $enterpriseService->images()->count() + $index]);
         }

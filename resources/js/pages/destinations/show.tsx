@@ -1,6 +1,9 @@
+import { BackToLanding } from '@/components/back-to-landing';
 import DestinationMap from '@/components/landing/destination-map';
+import { ReviewSection, type PublicReview, type ReviewSummary } from '@/components/reviews/review-section';
+import { SiteBrand } from '@/components/site-brand';
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, ArrowRight, ChevronRight, Clock3, Globe, Mail, MapPin, Navigation, Phone, Ticket, Waves, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronRight, Clock3, Globe, Mail, MapPin, Navigation, Phone, Ticket, X } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 
 interface Taxonomy {
@@ -63,12 +66,34 @@ function formatFee(value: string | null): string {
 export default function DestinationShow({
     destination,
     relatedDestinations,
+    reviews,
+    reviewSummary,
 }: {
     destination: Destination;
     relatedDestinations: RelatedDestination[];
+    reviews: PublicReview[];
+    reviewSummary: ReviewSummary;
 }) {
     const [activeImage, setActiveImage] = useState<number | null>(null);
+    const [activeHeroImage, setActiveHeroImage] = useState(0);
     const gallery = destination.images;
+    const heroImages = [
+        ...(destination.featured_image_url
+            ? [{ id: `featured-${destination.id}`, image_url: destination.featured_image_url, caption: destination.name }]
+            : []),
+        ...gallery,
+    ].filter((image, index, images) => images.findIndex((candidate) => candidate.image_url === image.image_url) === index);
+    const carouselImages = heroImages.length > 0 ? heroImages : [{ id: 'fallback', image_url: fallbackImage, caption: destination.name }];
+
+    useEffect(() => {
+        if (carouselImages.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        const interval = window.setInterval(() => {
+            setActiveHeroImage((current) => (current + 1) % carouselImages.length);
+        }, 6000);
+
+        return () => window.clearInterval(interval);
+    }, [carouselImages.length]);
 
     useEffect(() => {
         if (activeImage === null) return;
@@ -93,24 +118,23 @@ export default function DestinationShow({
             <header className="sticky top-0 z-[1000] border-b border-orange-100 bg-white/95 backdrop-blur-xl">
                 <nav className="mx-auto flex h-18 max-w-7xl items-center justify-between px-5">
                     <Link href={route('home')} className="flex items-center gap-3 font-bold">
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-[#F97316] text-white">
-                            <Waves />
-                        </span>
-                        Explore Hinoba-an
+                        <SiteBrand compact />
                     </Link>
-                    <Link href={route('home')} className="inline-flex items-center gap-2 text-sm font-semibold text-[#0F766E]">
-                        <ArrowLeft className="size-4" /> Back to Home
-                    </Link>
+                    <BackToLanding compact />
                 </nav>
             </header>
 
             <main>
                 <section className="relative min-h-[520px] overflow-hidden">
-                    <img
-                        src={destination.featured_image_url ?? fallbackImage}
-                        alt={destination.name}
-                        className="absolute inset-0 size-full object-cover"
-                    />
+                    {carouselImages.map((image, index) => (
+                        <img
+                            key={image.id}
+                            src={image.image_url}
+                            alt={image.caption ?? `${destination.name} photo ${index + 1}`}
+                            aria-hidden={index !== activeHeroImage}
+                            className={`absolute inset-0 size-full object-cover transition-opacity duration-1000 ${index === activeHeroImage ? 'opacity-100' : 'opacity-0'}`}
+                        />
+                    ))}
                     <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/45 to-slate-950/10" />
                     <div className="relative mx-auto flex min-h-[520px] max-w-7xl flex-col justify-end px-5 py-14 text-white sm:px-8">
                         <div className="mb-auto flex flex-wrap items-center gap-2 pt-5 text-sm text-white/75">
@@ -129,6 +153,41 @@ export default function DestinationShow({
                             {location}
                         </p>
                     </div>
+                    {carouselImages.length > 1 && (
+                        <>
+                            <button
+                                type="button"
+                                aria-label="Previous destination photo"
+                                onClick={() => setActiveHeroImage((current) => (current - 1 + carouselImages.length) % carouselImages.length)}
+                                className="absolute top-1/2 left-4 z-10 hidden -translate-y-1/2 rounded-full border border-white/30 bg-slate-950/35 p-3 text-white backdrop-blur transition hover:bg-[#F97316] sm:block"
+                            >
+                                <ArrowLeft className="size-5" />
+                            </button>
+                            <button
+                                type="button"
+                                aria-label="Next destination photo"
+                                onClick={() => setActiveHeroImage((current) => (current + 1) % carouselImages.length)}
+                                className="absolute top-1/2 right-4 z-10 hidden -translate-y-1/2 rounded-full border border-white/30 bg-slate-950/35 p-3 text-white backdrop-blur transition hover:bg-[#F97316] sm:block"
+                            >
+                                <ArrowRight className="size-5" />
+                            </button>
+                            <div
+                                className="absolute right-0 bottom-5 left-0 z-10 flex items-center justify-center gap-2"
+                                aria-label="Destination photos"
+                            >
+                                {carouselImages.map((image, index) => (
+                                    <button
+                                        key={image.id}
+                                        type="button"
+                                        aria-label={`Show destination photo ${index + 1}`}
+                                        aria-current={index === activeHeroImage}
+                                        onClick={() => setActiveHeroImage(index)}
+                                        className={`h-2.5 rounded-full shadow-sm transition-all ${index === activeHeroImage ? 'w-8 bg-[#F97316]' : 'w-2.5 bg-white/75 hover:bg-white'}`}
+                                    />
+                                ))}
+                            </div>
+                        </>
+                    )}
                 </section>
 
                 <div className="mx-auto max-w-7xl space-y-20 px-5 py-16 sm:px-8">
@@ -257,6 +316,7 @@ export default function DestinationShow({
                         </section>
                     )}
                 </div>
+                <ReviewSection targetType="destination" targetId={destination.id} reviews={reviews} summary={reviewSummary} />
             </main>
 
             {activeImage !== null && gallery[activeImage] && (

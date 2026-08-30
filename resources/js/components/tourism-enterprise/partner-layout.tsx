@@ -1,30 +1,50 @@
+import { SiteBrand } from '@/components/site-brand';
+import { PartnerNotificationDropdown } from '@/components/tourism-enterprise/partner-notification-dropdown';
 import { Button } from '@/components/ui/button';
 import { SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Building2, CalendarDays, FileText, LayoutDashboard, LogOut, Waves } from 'lucide-react';
+import { Building2, CalendarCheck, CalendarDays, FileText, LayoutDashboard, LogOut, Package, ShoppingBag, Users } from 'lucide-react';
 import { ReactNode } from 'react';
 
-const links = [
+const commonLinks = [
     ['Dashboard', 'partner.dashboard', LayoutDashboard],
     ['My Enterprises', 'partner.enterprises.index', Building2],
     ['Documents', 'partner.documents.index', FileText],
+] as const;
+
+const tourismServiceLinks = [
     ['Services & Facilities', 'partner.services.index', Building2],
     ['Reservations', 'partner.reservations.index', CalendarDays],
 ] as const;
 
+const productLinks = [
+    ['Local Products', 'partner.products.index', Package],
+    ['Product Orders', 'partner.product-orders.index', ShoppingBag],
+] as const;
+
 export default function PartnerLayout({ children }: { children: ReactNode }) {
-    const { auth } = usePage<SharedData>().props;
+    const { auth, partnerWorkspace } = usePage<SharedData>().props;
+    const arrivalLinks = partnerWorkspace?.can_report_arrivals
+        ? ([
+              ['Tourist Arrivals', 'partner.tourist-arrivals.index', Users],
+              ['Daily Tourist Reports', 'partner.daily-reports.index', CalendarCheck],
+          ] as const)
+        : [];
+    const links = [
+        ...commonLinks,
+        ...(partnerWorkspace?.is_local_product_producer ? [] : tourismServiceLinks),
+        ...arrivalLinks,
+        ...(partnerWorkspace?.is_local_product_producer ? productLinks : []),
+    ];
     return (
         <div className="min-h-screen bg-[#FFFBF5] text-[#1F2937]">
             <header className="sticky top-0 z-30 border-b border-orange-100 bg-white/95 shadow-sm backdrop-blur">
                 <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-5">
                     <Link href={route('partner.dashboard')} className="flex items-center gap-3 font-bold">
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-[#F97316] text-white">
-                            <Waves className="size-5" />
-                        </span>
-                        <span>Enterprise Partner Portal</span>
+                        <SiteBrand subtitle="Enterprise Partner Portal" compact />
                     </Link>
                     <div className="flex items-center gap-2">
+                        <PartnerNotificationDropdown />
                         <span className="hidden text-sm font-semibold sm:block">{auth.user.name}</span>
                         <Button variant="outline" size="sm" asChild>
                             <Link href={route('logout')} method="post" as="button">

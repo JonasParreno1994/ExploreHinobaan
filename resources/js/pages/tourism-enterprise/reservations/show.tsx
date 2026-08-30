@@ -11,12 +11,18 @@ interface Reservation {
     status: string;
     special_request: string | null;
     rejection_reason: string | null;
+    reservation_fee: string;
+    payment_status: string;
+    payment_proof_url: string | null;
     created_at: string;
     enterprise: { business_name: string };
+    customer: { tourist_verification: { verification_status: string } | null } | null;
     items: {
         id: number;
         quantity: number;
         number_of_guests: number;
+        adults: number;
+        children: number;
         check_in: string | null;
         check_out: string | null;
         reservation_date: string | null;
@@ -25,7 +31,8 @@ interface Reservation {
         purpose: string | null;
         unit_price: string;
         subtotal: string;
-        service: { name: string; pricing_unit: string };
+        service: { name: string; pricing_unit: string; service_type: { name: string } | null };
+        session: { name: string; start_time: string; end_time: string } | null;
     }[];
 }
 export default function Show({ reservation: r }: { reservation: Reservation }) {
@@ -48,23 +55,53 @@ export default function Show({ reservation: r }: { reservation: Reservation }) {
                 </div>
                 <div className="mt-7 grid gap-5 sm:grid-cols-2">
                     <Info label="Customer" value={r.customer_name} />
+                    <Info label="Customer type" value={r.customer ? (r.customer.tourist_verification?.verification_status === 'verified' ? '✓ Verified Tourist' : `Tourist account · ${r.customer.tourist_verification?.verification_status ?? 'unverified'}`) : 'Guest Customer'} />
                     <Info label="Contact" value={`${r.customer_contact} · ${r.customer_email}`} />
                     <Info label="Service" value={r.items[0]?.service.name} />
+                    <Info label="Service type" value={r.items[0]?.service.service_type?.name} />
                     <Info
                         label="Schedule"
                         value={
                             r.items[0]?.check_in
                                 ? `${r.items[0].check_in} – ${r.items[0].check_out}`
-                                : `${r.items[0]?.reservation_date ?? ''} ${r.items[0]?.start_time ?? ''}`
+                                : `${r.items[0]?.reservation_date ?? ''} ${r.items[0]?.session?.name ?? r.items[0]?.start_time ?? ''}`
                         }
                     />
                     <Info label="Guests / Quantity" value={`${r.items[0]?.number_of_guests} guests · ${r.items[0]?.quantity} unit(s)`} />
+                    <Info label="Guest breakdown" value={`${r.items[0]?.adults} adult(s) · ${r.items[0]?.children} child(ren)`} />
                     <Info label="Total" value={`₱${Number(r.total_amount).toLocaleString('en-PH')}`} />
                 </div>
                 {r.special_request && (
                     <div className="mt-6 rounded-2xl bg-[#FFF3E6] p-4">
                         <strong>Special request</strong>
                         <p className="mt-1 text-sm">{r.special_request}</p>
+                    </div>
+                )}
+                {Number(r.reservation_fee) > 0 && (
+                    <div className="mt-6 rounded-2xl border border-teal-200 p-4">
+                        <strong>Reservation fee: ₱{Number(r.reservation_fee).toLocaleString('en-PH')}</strong>
+                        <p className="capitalize">Payment: {r.payment_status.replace('_', ' ')}</p>
+                        {r.payment_proof_url && (
+                            <a href={r.payment_proof_url} target="_blank" rel="noreferrer">
+                                <img src={r.payment_proof_url} alt="Payment proof" className="mt-3 max-h-64 rounded-xl object-contain" />
+                            </a>
+                        )}
+                        {r.payment_status === 'pending_verification' && (
+                            <div className="mt-3 flex gap-2">
+                                <Button
+                                    onClick={() => router.patch(route('partner.reservations.payment', r.id), { payment_status: 'verified' })}
+                                    className="bg-[#0F766E]"
+                                >
+                                    Verify payment
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    onClick={() => router.patch(route('partner.reservations.payment', r.id), { payment_status: 'rejected' })}
+                                >
+                                    Reject proof
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 )}
                 <div className="mt-7 flex gap-3 border-t pt-5">

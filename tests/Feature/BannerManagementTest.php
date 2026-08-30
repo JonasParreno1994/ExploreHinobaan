@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Banner;
+use App\Models\BannerText;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -50,15 +51,13 @@ test('authenticated users can update a banner and retain pictures', function () 
 });
 
 test('administrator can update text without uploading banner pictures', function () {
-    $banner = Banner::factory()->create();
-
-    $this->actingAs(bannerAdministrator())->put(route('admin.text.update', $banner), [
+    $this->actingAs(bannerAdministrator())->put(route('admin.text.update'), [
         'header_1' => 'Southern Negros Occidental',
         'header_2' => 'Discover Hinoba-an',
         'header_3' => 'Explore our beautiful municipality.',
     ])->assertRedirect(route('admin.text.index'));
 
-    expect($banner->textContent()->firstOrFail()->header_2)->toBe('Discover Hinoba-an');
+    expect(BannerText::query()->latest('id')->firstOrFail()->header_2)->toBe('Discover Hinoba-an');
 });
 
 test('authenticated users can delete a banner and its pictures', function () {

@@ -4,6 +4,8 @@ use App\Models\Enterprise;
 use App\Models\EnterpriseService;
 use App\Models\Reservation;
 use App\Models\Role;
+use App\Models\ServiceSession;
+use App\Models\ServiceType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -19,6 +21,7 @@ test('guest reservation total is calculated by the backend', function () {
         'check_in' => now()->addDays(3)->toDateString(), 'check_out' => now()->addDays(5)->toDateString(),
     ]);
 
+    $response->assertSessionHasNoErrors();
     $reservation = Reservation::firstOrFail();
     $response->assertRedirect(route('reservations.success', $reservation->reservation_number));
     expect($reservation->status)->toBe('pending')->and($reservation->total_amount)->toBe('10000.00');
@@ -51,4 +54,55 @@ test('a pending reservation cannot be confirmed after inventory is consumed', fu
 
     $this->actingAs($owner)->patch(route('partner.reservations.status', $pending), ['status' => 'confirmed'])->assertSessionHasErrors('status');
     expect($pending->refresh()->status)->toBe('pending');
+});
+
+test('room reservations enforce guest capacity across selected rooms', function () {
+    $enterprise = Enterprise::factory()->create(['application_status' => 'approved']);
+    $roomType = ServiceType::factory()->create(['name' => 'Room']);
+    $service = EnterpriseService::factory()->for($enterprise)->for($roomType, 'serviceType')->create([
+        'reservation_mode' => 'overnight', 'capacity' => 4, 'quantity' => 5,
+    ]);
+
+    $this->post(route('reservations.store'), [
+        'enterprise_service_id' => $service->id, 'customer_name' => 'Large Group', 'customer_email' => 'group@example.com',
+        'customer_contact' => '09123456789', 'quantity' => 2, 'number_of_guests' => 9, 'adults' => 7, 'children' => 2,
+        'check_in' => now()->addDays(3)->toDateString(), 'check_out' => now()->addDays(5)->toDateString(),
+    ])->assertSessionHasErrors('number_of_guests');
+});
+
+test('private pool sessions use the session price and prevent duplicate pending bookings', function () {
+    $enterprise = Enterprise::factory()->create(['application_status' => 'approved']);
+    $poolType = ServiceType::factory()->create(['name' => 'Swimming Pool']);
+    $service = EnterpriseService::factory()->for($enterprise)->for($poolType, 'serviceType')->create([
+        'reservation_mode' => 'session', 'pool_type' => 'private', 'pricing_unit' => 'per_session', 'quantity' => 1, 'capacity' => 25,
+    ]);
+    $session = ServiceSession::factory()->for($service, 'service')->create(['price' => 3000, 'capacity' => 25]);
+    $reservationDate = now()->addDays(4)->toDateString();
+    $payload = [
+        'enterprise_service_id' => $service->id, 'service_session_id' => $session->id, 'customer_name' => 'Pool Guest',
+        'customer_email' => 'pool@example.com', 'customer_contact' => '09123456789', 'quantity' => 1,
+        'number_of_guests' => 15, 'adults' => 10, 'children' => 5, 'reservation_date' => $reservationDate,
+    ];
+
+    $this->post(route('reservations.store'), $payload)->assertRedirect();
+    $savedReservation = Reservation::query()->with('items')->firstOrFail();
+    expect($savedReservation->total_amount)->toBe('3000.00')
+        ->and($savedReservation->items->first()->service_session_id)->toBe($session->id)
+        ->and($savedReservation->items->first()->reservation_date->toDateString())->toBe($reservationDate);
+
+    $this->post(route('reservations.store'), [...$payload, 'customer_email' => 'second@example.com'])
+        ->assertSessionHasErrors('quantity');
+});
+
+test('reservation fee requires payment proof before a reservation is submitted', function () {
+    $enterprise = Enterprise::factory()->create(['application_status' => 'approved', 'reservation_fee' => 500]);
+    $service = EnterpriseService::factory()->for($enterprise)->create();
+
+    $this->post(route('reservations.store'), [
+        'enterprise_service_id' => $service->id, 'customer_name' => 'Paying Guest', 'customer_email' => 'pay@example.com',
+        'customer_contact' => '09123456789', 'quantity' => 1, 'number_of_guests' => 1,
+        'reservation_date' => now()->addDays(3)->toDateString(),
+    ])->assertSessionHasErrors('payment_proof');
+
+    expect(Reservation::query()->count())->toBe(0);
 });

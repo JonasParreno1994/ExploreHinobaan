@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Storage;
 
 class EnterpriseService extends Model
@@ -16,7 +17,7 @@ class EnterpriseService extends Model
 
     protected $fillable = [
         'enterprise_id', 'service_type_id', 'name', 'slug', 'short_description', 'description', 'price', 'pricing_unit',
-        'capacity', 'quantity', 'amenities', 'main_image', 'reservation_required', 'check_in_time', 'check_out_time',
+        'capacity', 'quantity', 'amenities', 'main_image', 'reservation_required', 'reservation_mode', 'pool_type', 'check_in_time', 'check_out_time',
         'duration_minutes', 'status',
     ];
 
@@ -44,9 +45,24 @@ class EnterpriseService extends Model
         return $this->hasMany(ServiceAvailability::class);
     }
 
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(ServiceSession::class)->orderBy('start_time');
+    }
+
     public function reservationItems(): HasMany
     {
         return $this->hasMany(ReservationItem::class);
+    }
+
+    public function reviews(): MorphMany
+    {
+        return $this->morphMany(Review::class, 'reviewable');
+    }
+
+    public function publishedReviews(): MorphMany
+    {
+        return $this->reviews()->where('status', 'published');
     }
 
     protected function casts(): array

@@ -7,7 +7,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 
 export default function CreateAnnouncement() {
-    const form = useForm<AnnouncementFormData>({ title: '', content: '', publish_date: '', expiration_date: '', status: 'active' });
+    const form = useForm<AnnouncementFormData & Record<string, string>>({ title: '', content: '', publish_date: '', expiration_date: '', status: 'active' });
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Announcements', href: '/admin/announcements' },

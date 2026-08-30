@@ -39,10 +39,20 @@ class UpdateEnterpriseServiceRequest extends FormRequest
             'gallery_images' => ['nullable', 'array', 'max:10'],
             'gallery_images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'reservation_required' => ['required', 'boolean'],
+            'reservation_mode' => ['nullable', Rule::in(['overnight', 'day', 'timeslot', 'session'])],
+            'pool_type' => ['nullable', Rule::in(['private', 'shared'])],
             'check_in_time' => ['nullable', 'date_format:H:i'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
             'duration_minutes' => ['nullable', 'integer', 'min:1'],
             'status' => ['required', Rule::in(['draft', 'published', 'archived'])],
+            'sessions' => ['nullable', 'array', 'max:12'],
+            'sessions.*.id' => ['nullable', 'integer'],
+            'sessions.*.name' => ['required', 'string', 'max:100'],
+            'sessions.*.start_time' => ['required', 'date_format:H:i'],
+            'sessions.*.end_time' => ['required', 'date_format:H:i', 'after:sessions.*.start_time'],
+            'sessions.*.price' => ['required', 'numeric', 'min:0', 'max:9999999999.99'],
+            'sessions.*.capacity' => ['nullable', 'integer', 'min:1'],
+            'sessions.*.is_active' => ['required', 'boolean'],
         ];
     }
 }

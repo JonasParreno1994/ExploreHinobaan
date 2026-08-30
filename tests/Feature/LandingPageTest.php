@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Banner;
+use App\Models\BannerText;
 use App\Models\Barangay;
 use App\Models\Destination;
 use App\Models\Enterprise;
@@ -62,12 +63,12 @@ test('landing page handles empty tourism content', function () {
         ->has('mapLocations', 0));
 });
 
-test('landing page carousel uses active admin banner pictures and matching text', function () {
-    $activeBanner = Banner::factory()->create([
+test('landing page carousel uses active pictures with one permanent text block', function () {
+    Banner::factory()->create([
         'images' => ['banners/first.jpg', 'banners/second.jpg'],
         'status' => 'active',
     ]);
-    $activeBanner->textContent()->create([
+    BannerText::factory()->create([
         'header_1' => 'Header one',
         'header_2' => 'Header two',
         'header_3' => 'Header three',
@@ -81,8 +82,7 @@ test('landing page carousel uses active admin banner pictures and matching text'
     $this->get(route('home'))->assertSuccessful()->assertInertia(fn (Assert $page) => $page
         ->has('heroSlides', 2)
         ->where('heroSlides.0.image', Storage::disk('public')->url('banners/first.jpg'))
-        ->where('heroSlides.0.header_1', 'Header one')
-        ->where('heroSlides.0.header_2', 'Header two')
-        ->where('heroSlides.0.header_3', 'Header three')
-        ->where('heroSlides.1.header_2', 'Header two'));
+        ->where('heroText.header_1', 'Header one')
+        ->where('heroText.header_2', 'Header two')
+        ->where('heroText.header_3', 'Header three'));
 });

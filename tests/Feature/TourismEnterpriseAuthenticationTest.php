@@ -9,6 +9,15 @@ test('tourism enterprise login page is publicly available', function () {
     $this->get(route('partner.login'))->assertSuccessful()->assertInertia(fn (Assert $page) => $page->component('tourism-enterprise/login'));
 });
 
+test('an authenticated administrator can open the tourism enterprise login page', function () {
+    $administrator = User::factory()->for(Role::factory()->create(['name' => 'Administrator']))->create();
+
+    $this->actingAs($administrator)
+        ->get(route('partner.login'))
+        ->assertSuccessful()
+        ->assertInertia(fn (Assert $page) => $page->component('tourism-enterprise/login'));
+});
+
 test('a linked tourism enterprise account can sign in to the partner portal', function () {
     $user = User::factory()->for(Role::factory()->create(['name' => 'Tourism Enterprise']))->create();
     Enterprise::factory()->for($user)->create();

@@ -1,6 +1,6 @@
 import '../css/app.css';
 
-import { createInertiaApp } from '@inertiajs/react';
+import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { route as routeFn } from 'ziggy-js';
@@ -12,11 +12,32 @@ declare global {
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
+function updateFavicon(logoUrl: unknown): void {
+    const href = typeof logoUrl === 'string' && logoUrl.length > 0 ? logoUrl : '/favicon.ico';
+    let favicon = document.querySelector<HTMLLinkElement>('#site-favicon');
+
+    if (!favicon) {
+        favicon = document.createElement('link');
+        favicon.id = 'site-favicon';
+        favicon.rel = 'icon';
+        document.head.appendChild(favicon);
+    }
+
+    favicon.href = href;
+}
+
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx')),
     setup({ el, App, props }) {
         const root = createRoot(el);
+        const initialBranding = props.initialPage.props.branding as { logo_url?: unknown } | null | undefined;
+
+        updateFavicon(initialBranding?.logo_url);
+        router.on('navigate', (event) => {
+            const branding = event.detail.page.props.branding as { logo_url?: unknown } | null | undefined;
+            updateFavicon(branding?.logo_url);
+        });
 
         root.render(<App {...props} />);
     },
