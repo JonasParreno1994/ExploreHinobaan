@@ -33,7 +33,7 @@ test('tourism enterprise dashboard is exclusive to tourism enterprise users', fu
 });
 
 test('users without an assigned role cannot access protected dashboards', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->create(['role_id' => null]);
 
     $this->actingAs($user)->get(route('dashboard'))->assertForbidden();
     $this->actingAs($user)->get(route('partner.dashboard'))->assertForbidden();

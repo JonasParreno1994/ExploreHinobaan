@@ -38,7 +38,7 @@ class RecordUserActivity
 
         if ($actor instanceof User && $this->shouldRecord($request, $response)) {
             AuditLog::create([
-                'user_id' => $actor->id,
+                'user_id' => User::query()->whereKey($actor->id)->exists() ? $actor->id : null,
                 'actor_name' => $actor->name,
                 'actor_email' => $actor->email,
                 'action' => $this->action($request),

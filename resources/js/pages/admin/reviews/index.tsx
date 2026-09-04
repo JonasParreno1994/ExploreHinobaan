@@ -7,5 +7,81 @@ import { BadgeCheck, Star } from 'lucide-react';
 
 export default function ReviewIndex({ reviews, filters }: any) {
     const moderate = (id: number, status: string) => router.patch(`/admin/reviews/${id}`, { status }, { preserveScroll: true });
-    return <AdminLayout title="Reviews" breadcrumbs={[{ title: 'Dashboard', href: '/dashboard' }, { title: 'Reviews', href: '/admin/reviews' }]}><Head title="Review Moderation" /><div className="flex flex-col gap-6"><div><h1 className="text-2xl font-bold">Review Moderation</h1><p className="text-muted-foreground text-sm">Publish appropriate visitor feedback or reject submissions that violate portal guidelines.</p></div><div className="flex flex-wrap gap-2">{['', 'pending', 'published', 'rejected'].map(status => <Button key={status || 'all'} variant={(filters.status ?? '') === status ? 'default' : 'outline'} onClick={() => router.get('/admin/reviews', status ? { status } : {})}>{status || 'All'}</Button>)}</div><Card><CardHeader><CardTitle>{reviews.total} reviews</CardTitle></CardHeader><CardContent className="divide-y p-0">{reviews.data.map((review: any) => <article key={review.id} className="p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><div className="flex items-center gap-2"><strong>{review.reviewer_name}</strong>{review.is_verified && <Badge className="bg-emerald-100 text-emerald-800"><BadgeCheck className="size-3" /> Verified</Badge>}</div><p className="text-muted-foreground text-xs">{review.reviewer_email} · {review.reviewable?.business_name ?? review.reviewable?.name ?? 'Removed item'}</p></div><Badge variant="outline">{review.status}</Badge></div><div className="mt-3 flex gap-0.5">{[1,2,3,4,5].map(star => <Star key={star} className={`size-4 ${star <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />)}</div>{review.title && <h2 className="mt-3 font-semibold">{review.title}</h2>}<p className="mt-2 whitespace-pre-line text-sm text-slate-600">{review.comment}</p>{review.status === 'pending' && <div className="mt-4 flex gap-2"><Button size="sm" className="bg-emerald-700" onClick={() => moderate(review.id, 'published')}>Publish</Button><Button size="sm" variant="destructive" onClick={() => moderate(review.id, 'rejected')}>Reject</Button></div>}</article>)}</CardContent></Card></div></AdminLayout>;
+    return (
+        <AdminLayout
+            title="Reviews"
+            breadcrumbs={[
+                { title: 'Dashboard', href: '/dashboard' },
+                { title: 'Reviews', href: '/admin/reviews' },
+            ]}
+        >
+            <Head title="Review Moderation" />
+            <div className="flex flex-col gap-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Review Moderation</h1>
+                    <p className="text-muted-foreground text-sm">
+                        Publish appropriate visitor feedback or reject submissions that violate portal guidelines.
+                    </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    {['', 'pending', 'published', 'rejected'].map((status) => (
+                        <Button
+                            key={status || 'all'}
+                            variant={(filters.status ?? '') === status ? 'default' : 'outline'}
+                            onClick={() => router.get('/admin/reviews', status ? { status } : {})}
+                        >
+                            {status || 'All'}
+                        </Button>
+                    ))}
+                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>{reviews.total} reviews</CardTitle>
+                    </CardHeader>
+                    <CardContent className="divide-y p-0">
+                        {reviews.data.map((review: any) => (
+                            <article key={review.id} className="p-5">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <strong>{review.reviewer_name}</strong>
+                                            {review.is_verified && (
+                                                <Badge className="bg-emerald-100 text-emerald-800">
+                                                    <BadgeCheck className="size-3" /> Verified
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        <p className="text-muted-foreground text-xs">
+                                            {review.reviewer_email} · {review.reviewable?.business_name ?? review.reviewable?.name ?? 'Removed item'}
+                                        </p>
+                                    </div>
+                                    <Badge variant="outline">{review.status}</Badge>
+                                </div>
+                                <div className="mt-3 flex gap-0.5">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <Star
+                                            key={star}
+                                            className={`size-4 ${star <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
+                                        />
+                                    ))}
+                                </div>
+                                {review.title && <h2 className="mt-3 font-semibold">{review.title}</h2>}
+                                <p className="mt-2 text-sm whitespace-pre-line text-slate-600">{review.comment}</p>
+                                {review.status === 'pending' && (
+                                    <div className="mt-4 flex gap-2">
+                                        <Button size="sm" className="bg-emerald-700" onClick={() => moderate(review.id, 'published')}>
+                                            Publish
+                                        </Button>
+                                        <Button size="sm" variant="destructive" onClick={() => moderate(review.id, 'rejected')}>
+                                            Reject
+                                        </Button>
+                                    </div>
+                                )}
+                            </article>
+                        ))}
+                    </CardContent>
+                </Card>
+            </div>
+        </AdminLayout>
+    );
 }

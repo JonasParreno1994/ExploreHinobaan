@@ -1,6 +1,5 @@
-import { type SharedData } from '@/types';
 import { ReviewSection, type PublicReview, type ReviewSummary } from '@/components/reviews/review-section';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, CalendarDays, Check, MapPin, Users } from 'lucide-react';
 import { FormEvent, useMemo, useState } from 'react';
 
@@ -43,8 +42,28 @@ interface Service {
     availabilities: { date: string; available_quantity: number | null; status: string }[];
 }
 
-export default function ServiceShow({ enterprise, service, reviews, reviewSummary, tourist }: { enterprise: Enterprise; service: Service; reviews: PublicReview[]; reviewSummary: ReviewSummary; tourist: any }) {
-    const { auth } = usePage<SharedData>().props;
+interface Tourist {
+    name: string;
+    email: string;
+    phone: string | null;
+    city_municipality: string | null;
+    province: string | null;
+    country: string | null;
+}
+
+export default function ServiceShow({
+    enterprise,
+    service,
+    reviews,
+    reviewSummary,
+    tourist,
+}: {
+    enterprise: Enterprise;
+    service: Service;
+    reviews: PublicReview[];
+    reviewSummary: ReviewSummary;
+    tourist: Tourist | null;
+}) {
     const form = useForm({
         enterprise_service_id: service.id,
         customer_name: tourist?.name ?? '',
@@ -66,7 +85,8 @@ export default function ServiceShow({ enterprise, service, reviews, reviewSummar
         payment_proof: null as File | null,
     });
     const [continueMode, setContinueMode] = useState<'guest' | 'account' | null>(tourist ? 'account' : null);
-    const reservationReturn = typeof window === 'undefined' ? `/enterprises/${enterprise.slug}/services/${service.id}` : `${window.location.pathname}?reserve=1`;
+    const reservationReturn =
+        typeof window === 'undefined' ? `/enterprises/${enterprise.slug}/services/${service.id}` : `${window.location.pathname}?reserve=1`;
     const isRoom = service.service_type?.name.toLowerCase().includes('room') ?? false;
     const isCottage = service.service_type?.name.toLowerCase().includes('cottage') ?? false;
     const isPool = service.service_type?.name.toLowerCase().includes('pool') ?? false;
@@ -184,204 +204,241 @@ export default function ServiceShow({ enterprise, service, reviews, reviewSummar
                             <Users className="size-4" /> Up to {service.capacity ?? 'unspecified'} guests · {service.quantity} available
                         </p>
                         {service.reservation_required ? (
-                            continueMode === null ? <div className="mt-7 space-y-3"><h2 className="text-xl font-bold">Continue your reservation</h2><p className="text-sm text-slate-500">Choose how you would like to continue. Guest booking remains available.</p><Link href={`/tourist/login?redirect=${encodeURIComponent(reservationReturn)}`} className="block rounded-xl bg-[#0F766E] p-4 text-center font-bold text-white">Tourist Login<span className="mt-1 block text-xs font-normal text-teal-50">Manage reservations and use saved information.</span></Link><Link href={`/tourist/register?redirect=${encodeURIComponent(reservationReturn)}`} className="block rounded-xl border border-[#F97316] p-4 text-center font-bold text-[#C2410C]">Create Account<span className="mt-1 block text-xs font-normal text-slate-500">Create a verified tourist profile.</span></Link><button type="button" onClick={()=>setContinueMode('guest')} className="w-full rounded-xl border border-slate-300 p-4 font-bold">Continue as Guest<span className="mt-1 block text-xs font-normal text-slate-500">Reserve without creating an account.</span></button></div> : <form onSubmit={submit} className="mt-7 space-y-4">
-                                <h2 className="text-xl font-bold">Request a reservation</h2>
-                                {continueMode === 'account' && <p className="rounded-xl bg-teal-50 p-3 text-sm font-semibold text-[#0F766E]">Booking with your registered tourist account.</p>}
-                                <div className="grid gap-3 sm:grid-cols-2">
-                                    <Input
-                                        label="Full name"
-                                        value={form.data.customer_name}
-                                        onChange={(value) => form.setData('customer_name', value)}
-                                        error={form.errors.customer_name}
-                                    />
-                                    <Input
-                                        label="Contact number"
-                                        value={form.data.customer_contact}
-                                        onChange={(value) => form.setData('customer_contact', value)}
-                                        error={form.errors.customer_contact}
-                                    />
+                            continueMode === null ? (
+                                <div className="mt-7 space-y-3">
+                                    <h2 className="text-xl font-bold">Continue your reservation</h2>
+                                    <p className="text-sm text-slate-500">Choose how you would like to continue. Guest booking remains available.</p>
+                                    <Link
+                                        href={`/tourist/login?redirect=${encodeURIComponent(reservationReturn)}`}
+                                        className="block rounded-xl bg-[#0F766E] p-4 text-center font-bold text-white"
+                                    >
+                                        Tourist Login
+                                        <span className="mt-1 block text-xs font-normal text-teal-50">
+                                            Manage reservations and use saved information.
+                                        </span>
+                                    </Link>
+                                    <Link
+                                        href={`/tourist/register?redirect=${encodeURIComponent(reservationReturn)}`}
+                                        className="block rounded-xl border border-[#F97316] p-4 text-center font-bold text-[#C2410C]"
+                                    >
+                                        Create Account
+                                        <span className="mt-1 block text-xs font-normal text-slate-500">Create a verified tourist profile.</span>
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        onClick={() => setContinueMode('guest')}
+                                        className="w-full rounded-xl border border-slate-300 p-4 font-bold"
+                                    >
+                                        Continue as Guest
+                                        <span className="mt-1 block text-xs font-normal text-slate-500">Reserve without creating an account.</span>
+                                    </button>
                                 </div>
-                                <Input
-                                    label="Email"
-                                    type="email"
-                                    value={form.data.customer_email}
-                                    onChange={(value) => form.setData('customer_email', value)}
-                                    error={form.errors.customer_email}
-                                />
-                                <Input
-                                    label="Address / City (optional)"
-                                    value={form.data.customer_address}
-                                    onChange={(value) => form.setData('customer_address', value)}
-                                    error={form.errors.customer_address}
-                                />
-                                {isRoom ? (
+                            ) : (
+                                <form onSubmit={submit} className="mt-7 space-y-4">
+                                    <h2 className="text-xl font-bold">Request a reservation</h2>
+                                    {continueMode === 'account' && (
+                                        <p className="rounded-xl bg-teal-50 p-3 text-sm font-semibold text-[#0F766E]">
+                                            Booking with your registered tourist account.
+                                        </p>
+                                    )}
                                     <div className="grid gap-3 sm:grid-cols-2">
                                         <Input
-                                            label="Check-in"
-                                            type="date"
-                                            value={form.data.check_in}
-                                            onChange={(value) => form.setData('check_in', value)}
-                                            error={form.errors.check_in}
+                                            label="Full name"
+                                            value={form.data.customer_name}
+                                            onChange={(value) => form.setData('customer_name', value)}
+                                            error={form.errors.customer_name}
                                         />
                                         <Input
-                                            label="Check-out"
-                                            type="date"
-                                            value={form.data.check_out}
-                                            onChange={(value) => form.setData('check_out', value)}
-                                            error={form.errors.check_out}
+                                            label="Contact number"
+                                            value={form.data.customer_contact}
+                                            onChange={(value) => form.setData('customer_contact', value)}
+                                            error={form.errors.customer_contact}
                                         />
                                     </div>
-                                ) : (
                                     <Input
-                                        label="Reservation date"
-                                        type="date"
-                                        value={form.data.reservation_date}
-                                        onChange={(value) => form.setData('reservation_date', value)}
-                                        error={form.errors.reservation_date}
+                                        label="Email"
+                                        type="email"
+                                        value={form.data.customer_email}
+                                        onChange={(value) => form.setData('customer_email', value)}
+                                        error={form.errors.customer_email}
                                     />
-                                )}
-                                {needsTime && (
+                                    <Input
+                                        label="Address / City (optional)"
+                                        value={form.data.customer_address}
+                                        onChange={(value) => form.setData('customer_address', value)}
+                                        error={form.errors.customer_address}
+                                    />
+                                    {isRoom ? (
+                                        <div className="grid gap-3 sm:grid-cols-2">
+                                            <Input
+                                                label="Check-in"
+                                                type="date"
+                                                value={form.data.check_in}
+                                                onChange={(value) => form.setData('check_in', value)}
+                                                error={form.errors.check_in}
+                                            />
+                                            <Input
+                                                label="Check-out"
+                                                type="date"
+                                                value={form.data.check_out}
+                                                onChange={(value) => form.setData('check_out', value)}
+                                                error={form.errors.check_out}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <Input
+                                            label="Reservation date"
+                                            type="date"
+                                            value={form.data.reservation_date}
+                                            onChange={(value) => form.setData('reservation_date', value)}
+                                            error={form.errors.reservation_date}
+                                        />
+                                    )}
+                                    {needsTime && (
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Input
+                                                label="Start time"
+                                                type="time"
+                                                value={form.data.start_time}
+                                                onChange={(value) => form.setData('start_time', value)}
+                                                error={form.errors.start_time}
+                                            />
+                                            <Input
+                                                label="End time"
+                                                type="time"
+                                                value={form.data.end_time}
+                                                onChange={(value) => form.setData('end_time', value)}
+                                                error={form.errors.end_time}
+                                            />
+                                        </div>
+                                    )}
+                                    {isPool && service.reservation_mode === 'session' && (
+                                        <div>
+                                            <p className="mb-2 text-sm font-semibold">Available session</p>
+                                            <div className="grid gap-2">
+                                                {service.sessions.map((session) => {
+                                                    const booked = service.reservation_items.some(
+                                                        (item) =>
+                                                            item.reservation_date === form.data.reservation_date &&
+                                                            item.service_session_id === session.id,
+                                                    );
+                                                    return (
+                                                        <button
+                                                            key={session.id}
+                                                            type="button"
+                                                            disabled={!form.data.reservation_date || booked}
+                                                            onClick={() => form.setData('service_session_id', String(session.id))}
+                                                            className={`rounded-xl border p-3 text-left ${form.data.service_session_id === String(session.id) ? 'border-[#F97316] bg-orange-50' : 'border-slate-200'} disabled:bg-slate-100 disabled:text-slate-400`}
+                                                        >
+                                                            <strong>{session.name}</strong>
+                                                            <span className="block text-xs">
+                                                                {session.start_time.slice(0, 5)} – {session.end_time.slice(0, 5)} ·{' '}
+                                                                {booked ? 'Booked' : `₱${Number(session.price).toLocaleString('en-PH')}`}
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            {form.errors.service_session_id && (
+                                                <small className="text-red-600">{form.errors.service_session_id}</small>
+                                            )}
+                                        </div>
+                                    )}
                                     <div className="grid grid-cols-2 gap-3">
                                         <Input
-                                            label="Start time"
-                                            type="time"
-                                            value={form.data.start_time}
-                                            onChange={(value) => form.setData('start_time', value)}
-                                            error={form.errors.start_time}
+                                            label={isRoom ? 'Number of rooms' : isCottage ? 'Number of cottages' : 'Quantity'}
+                                            type="number"
+                                            min="1"
+                                            value={String(form.data.quantity)}
+                                            onChange={(value) => form.setData('quantity', Number(value))}
+                                            error={form.errors.quantity}
                                         />
                                         <Input
-                                            label="End time"
-                                            type="time"
-                                            value={form.data.end_time}
-                                            onChange={(value) => form.setData('end_time', value)}
-                                            error={form.errors.end_time}
+                                            label="Adults"
+                                            type="number"
+                                            min="1"
+                                            value={String(form.data.adults)}
+                                            onChange={(value) => form.setData('adults', Number(value))}
+                                            error={form.errors.adults}
+                                        />
+                                        <Input
+                                            label="Children"
+                                            type="number"
+                                            min="0"
+                                            value={String(form.data.children)}
+                                            onChange={(value) => form.setData('children', Number(value))}
+                                            error={form.errors.children}
                                         />
                                     </div>
-                                )}
-                                {isPool && service.reservation_mode === 'session' && (
-                                    <div>
-                                        <p className="mb-2 text-sm font-semibold">Available session</p>
-                                        <div className="grid gap-2">
-                                            {service.sessions.map((session) => {
-                                                const booked = service.reservation_items.some(
-                                                    (item) =>
-                                                        item.reservation_date === form.data.reservation_date &&
-                                                        item.service_session_id === session.id,
-                                                );
-                                                return (
-                                                    <button
-                                                        key={session.id}
-                                                        type="button"
-                                                        disabled={!form.data.reservation_date || booked}
-                                                        onClick={() => form.setData('service_session_id', String(session.id))}
-                                                        className={`rounded-xl border p-3 text-left ${form.data.service_session_id === String(session.id) ? 'border-[#F97316] bg-orange-50' : 'border-slate-200'} disabled:bg-slate-100 disabled:text-slate-400`}
-                                                    >
-                                                        <strong>{session.name}</strong>
-                                                        <span className="block text-xs">
-                                                            {session.start_time.slice(0, 5)} – {session.end_time.slice(0, 5)} ·{' '}
-                                                            {booked ? 'Booked' : `₱${Number(session.price).toLocaleString('en-PH')}`}
-                                                        </span>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                        {form.errors.service_session_id && <small className="text-red-600">{form.errors.service_session_id}</small>}
-                                    </div>
-                                )}
-                                <div className="grid grid-cols-2 gap-3">
-                                    <Input
-                                        label={isRoom ? 'Number of rooms' : isCottage ? 'Number of cottages' : 'Quantity'}
-                                        type="number"
-                                        min="1"
-                                        value={String(form.data.quantity)}
-                                        onChange={(value) => form.setData('quantity', Number(value))}
-                                        error={form.errors.quantity}
-                                    />
-                                    <Input
-                                        label="Adults"
-                                        type="number"
-                                        min="1"
-                                        value={String(form.data.adults)}
-                                        onChange={(value) => form.setData('adults', Number(value))}
-                                        error={form.errors.adults}
-                                    />
-                                    <Input
-                                        label="Children"
-                                        type="number"
-                                        min="0"
-                                        value={String(form.data.children)}
-                                        onChange={(value) => form.setData('children', Number(value))}
-                                        error={form.errors.children}
-                                    />
-                                </div>
-                                <div className="rounded-xl border border-teal-100 bg-teal-50 p-3 text-sm">
-                                    <p>
-                                        <strong>{availableQuantity}</strong> {isRoom ? 'room(s)' : isCottage ? 'cottage(s)' : 'unit(s)'} available for
-                                        this schedule
-                                    </p>
-                                    {isRoom && (
+                                    <div className="rounded-xl border border-teal-100 bg-teal-50 p-3 text-sm">
                                         <p>
-                                            {nights} night(s) · maximum {maximumGuests || 'unspecified'} guests
+                                            <strong>{availableQuantity}</strong> {isRoom ? 'room(s)' : isCottage ? 'cottage(s)' : 'unit(s)'} available
+                                            for this schedule
                                         </p>
-                                    )}
-                                    <p>{totalGuests} total guest(s)</p>
-                                    {Number(form.data.quantity) > availableQuantity && (
-                                        <p className="mt-1 font-bold text-red-600">Only {availableQuantity} unit(s) are available.</p>
-                                    )}
-                                    {maximumGuests > 0 && totalGuests > maximumGuests && (
-                                        <p className="mt-1 font-bold text-red-600">
-                                            This selection can accommodate a maximum of {maximumGuests} guests.
-                                        </p>
-                                    )}
-                                </div>
-                                <label className="block text-sm font-semibold">
-                                    Special requests
-                                    <textarea
-                                        value={form.data.special_request}
-                                        onChange={(event) => form.setData('special_request', event.target.value)}
-                                        className="mt-1 min-h-24 w-full rounded-xl border border-slate-200 p-3 font-normal"
-                                    />
-                                </label>
-                                <div className="rounded-2xl bg-[#FFF3E6] p-4">
-                                    <span className="text-sm text-[#64748B]">Estimated total</span>
-                                    <strong className="block text-2xl text-[#C2410C]">₱{estimate.toLocaleString('en-PH')}</strong>
-                                    <small>The final total is securely recalculated when submitted.</small>
-                                </div>
-                                {Number(enterprise.reservation_fee ?? 0) > 0 && (
-                                    <div className="rounded-2xl border border-teal-200 p-4">
-                                        <h3 className="font-bold text-[#0F766E]">
-                                            Pay reservation fee: ₱{Number(enterprise.reservation_fee).toLocaleString('en-PH')}
-                                        </h3>
-                                        {enterprise.gcash_qr_url && (
-                                            <img
-                                                src={enterprise.gcash_qr_url}
-                                                alt="Enterprise GCash QR code"
-                                                className="mx-auto my-3 size-48 object-contain"
-                                            />
+                                        {isRoom && (
+                                            <p>
+                                                {nights} night(s) · maximum {maximumGuests || 'unspecified'} guests
+                                            </p>
                                         )}
-                                        <label className="text-sm font-semibold">
-                                            Upload GCash payment proof
-                                            <input
-                                                type="file"
-                                                required
-                                                accept="image/*"
-                                                onChange={(e) => form.setData('payment_proof', e.target.files?.[0] ?? null)}
-                                                className="mt-2 block w-full text-xs"
-                                            />
-                                        </label>
-                                        {form.errors.payment_proof && <small className="text-red-600">{form.errors.payment_proof}</small>}
-                                        <p className="mt-2 text-xs text-[#64748B]">
-                                            Your request remains pending until the enterprise verifies this payment.
-                                        </p>
+                                        <p>{totalGuests} total guest(s)</p>
+                                        {Number(form.data.quantity) > availableQuantity && (
+                                            <p className="mt-1 font-bold text-red-600">Only {availableQuantity} unit(s) are available.</p>
+                                        )}
+                                        {maximumGuests > 0 && totalGuests > maximumGuests && (
+                                            <p className="mt-1 font-bold text-red-600">
+                                                This selection can accommodate a maximum of {maximumGuests} guests.
+                                            </p>
+                                        )}
                                     </div>
-                                )}
-                                <button
-                                    disabled={form.processing || formInvalid}
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#F97316] px-5 py-3.5 font-bold text-white disabled:opacity-60"
-                                >
-                                    <CalendarDays className="size-5" /> Submit Reservation
-                                </button>
-                            </form>
+                                    <label className="block text-sm font-semibold">
+                                        Special requests
+                                        <textarea
+                                            value={form.data.special_request}
+                                            onChange={(event) => form.setData('special_request', event.target.value)}
+                                            className="mt-1 min-h-24 w-full rounded-xl border border-slate-200 p-3 font-normal"
+                                        />
+                                    </label>
+                                    <div className="rounded-2xl bg-[#FFF3E6] p-4">
+                                        <span className="text-sm text-[#64748B]">Estimated total</span>
+                                        <strong className="block text-2xl text-[#C2410C]">₱{estimate.toLocaleString('en-PH')}</strong>
+                                        <small>The final total is securely recalculated when submitted.</small>
+                                    </div>
+                                    {Number(enterprise.reservation_fee ?? 0) > 0 && (
+                                        <div className="rounded-2xl border border-teal-200 p-4">
+                                            <h3 className="font-bold text-[#0F766E]">
+                                                Pay reservation fee: ₱{Number(enterprise.reservation_fee).toLocaleString('en-PH')}
+                                            </h3>
+                                            {enterprise.gcash_qr_url && (
+                                                <img
+                                                    src={enterprise.gcash_qr_url}
+                                                    alt="Enterprise GCash QR code"
+                                                    className="mx-auto my-3 size-48 object-contain"
+                                                />
+                                            )}
+                                            <label className="text-sm font-semibold">
+                                                Upload GCash payment proof
+                                                <input
+                                                    type="file"
+                                                    required
+                                                    accept="image/*"
+                                                    onChange={(e) => form.setData('payment_proof', e.target.files?.[0] ?? null)}
+                                                    className="mt-2 block w-full text-xs"
+                                                />
+                                            </label>
+                                            {form.errors.payment_proof && <small className="text-red-600">{form.errors.payment_proof}</small>}
+                                            <p className="mt-2 text-xs text-[#64748B]">
+                                                Your request remains pending until the enterprise verifies this payment.
+                                            </p>
+                                        </div>
+                                    )}
+                                    <button
+                                        disabled={form.processing || formInvalid}
+                                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#F97316] px-5 py-3.5 font-bold text-white disabled:opacity-60"
+                                    >
+                                        <CalendarDays className="size-5" /> Submit Reservation
+                                    </button>
+                                </form>
+                            )
                         ) : (
                             <p className="mt-6 rounded-xl bg-[#FFF3E6] p-4 text-sm">Contact the enterprise directly to inquire about this service.</p>
                         )}
