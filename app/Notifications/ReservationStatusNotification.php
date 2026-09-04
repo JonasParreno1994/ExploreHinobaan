@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Reservation;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -25,7 +26,7 @@ class ReservationStatusNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return $notifiable instanceof User ? ['mail', 'database'] : ['mail'];
     }
 
     /**
@@ -58,5 +59,20 @@ class ReservationStatusNotification extends Notification implements ShouldQueue
                 'intro' => $intro,
                 'statusUrl' => $statusUrl,
             ]);
+    }
+
+    /** @return array<string, mixed> */
+    public function toArray(object $notifiable): array
+    {
+        $this->reservation->loadMissing('enterprise:id,business_name');
+        $status = str($this->reservation->status)->headline()->toString();
+
+        return [
+            'activity_type' => 'reservation',
+            'title' => "Reservation {$status}",
+            'message' => "{$this->reservation->enterprise->business_name} updated your reservation to {$status}.",
+            'reference' => $this->reservation->reservation_number,
+            'url' => route('tourist.reservations.show', $this->reservation),
+        ];
     }
 }

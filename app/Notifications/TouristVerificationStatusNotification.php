@@ -50,6 +50,15 @@ class TouristVerificationStatusNotification extends Notification implements Shou
      */
     public function toArray(object $notifiable): array
     {
-        return ['title' => 'Identity verification updated', 'status' => $this->verification->verification_status, 'message' => $this->verification->rejection_reason];
+        $status = str($this->verification->verification_status)->replace('_', ' ')->headline()->toString();
+
+        return [
+            'activity_type' => 'verification',
+            'title' => "Identity Verification {$status}",
+            'status' => $this->verification->verification_status,
+            'message' => $this->verification->rejection_reason ?: "Your identity verification is now {$status}.",
+            'reference' => 'Tourist account',
+            'url' => route('tourist.verification.show'),
+        ];
     }
 }

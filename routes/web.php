@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\SecurityMonitoringController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TourismCategoryController;
 use App\Http\Controllers\Admin\TouristArrivalController as AdminTouristArrivalController;
+use App\Http\Controllers\Admin\TouristController as AdminTouristController;
 use App\Http\Controllers\Admin\TouristVerificationController as AdminTouristVerificationController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WhyVisitSectionController;
@@ -48,6 +49,7 @@ use App\Http\Controllers\TourismEnterprise\ReservationController as PartnerReser
 use App\Http\Controllers\TourismEnterprise\TouristArrivalController as PartnerTouristArrivalController;
 use App\Http\Controllers\Tourist\AccountController as TouristAccountController;
 use App\Http\Controllers\Tourist\AuthenticatedSessionController as TouristSessionController;
+use App\Http\Controllers\Tourist\NotificationController as TouristNotificationController;
 use App\Http\Controllers\Tourist\RegisteredTouristController;
 use App\Http\Controllers\Tourist\VerificationController as TouristVerificationController;
 use Illuminate\Support\Facades\Route;
@@ -68,6 +70,9 @@ Route::middleware(['auth', 'role:Tourist'])->prefix('tourist')->name('tourist.')
     Route::get('reservations', [TouristAccountController::class, 'reservations'])->name('reservations.index');
     Route::get('reservations/{reservation}', [TouristAccountController::class, 'reservation'])->name('reservations.show');
     Route::get('profile', [TouristAccountController::class, 'profile'])->name('profile');
+    Route::get('notifications', [TouristNotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('notifications/read-all', [TouristNotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::patch('notifications/{notification}/read', [TouristNotificationController::class, 'read'])->name('notifications.read');
     Route::get('verification', [TouristVerificationController::class, 'show'])->name('verification.show');
     Route::post('verification', [TouristVerificationController::class, 'store'])->middleware(['verified', 'throttle:3,60'])->name('verification.store');
 });
@@ -128,6 +133,11 @@ Route::middleware(['auth', 'role:Administrator,Tourism Staff'])->group(function 
     })->name('dashboard');
 
     Route::resource('admin/users', UserController::class)->names('admin.users');
+    Route::get('admin/tourists', [AdminTouristController::class, 'index'])->name('admin.tourists.index');
+    Route::get('admin/tourists/{tourist}', [AdminTouristController::class, 'show'])->name('admin.tourists.show');
+    Route::patch('admin/tourists/{tourist}/status', [AdminTouristController::class, 'updateStatus'])
+        ->middleware('role:Administrator')
+        ->name('admin.tourists.status');
     Route::get('admin/tourist-arrivals', [AdminTouristArrivalController::class, 'index'])->name('admin.tourist-arrivals.index');
     Route::get('admin/tourist-verifications', [AdminTouristVerificationController::class, 'index'])->name('admin.tourist-verifications.index');
     Route::get('admin/tourist-verifications/{touristVerification}', [AdminTouristVerificationController::class, 'show'])->name('admin.tourist-verifications.show');

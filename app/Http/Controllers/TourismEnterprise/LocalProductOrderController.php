@@ -36,7 +36,12 @@ class LocalProductOrderController extends Controller
             abort(422, 'Verify GCash payment before accepting this order.');
         }
         $order->update([...$data, 'confirmed_at' => ($data['status'] ?? null) === 'accepted' ? now() : $order->confirmed_at, 'completed_at' => ($data['status'] ?? null) === 'completed' ? now() : $order->completed_at]);
-        Notification::route('mail', $order->customer_email)->notify(new LocalProductOrderStatusNotification($order->refresh()));
+        $order->refresh();
+        if ($order->customer) {
+            $order->customer->notify(new LocalProductOrderStatusNotification($order));
+        } else {
+            Notification::route('mail', $order->customer_email)->notify(new LocalProductOrderStatusNotification($order));
+        }
 
         return back()->with('success', 'Order updated.');
     }

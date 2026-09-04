@@ -41,7 +41,11 @@ class LocalProductOrderController extends Controller
             return $order;
         });
 
-        Notification::route('mail', $order->customer_email)->notify(new LocalProductOrderStatusNotification($order));
+        if ($order->customer) {
+            $order->customer->notify(new LocalProductOrderStatusNotification($order));
+        } else {
+            Notification::route('mail', $order->customer_email)->notify(new LocalProductOrderStatusNotification($order));
+        }
 
         $enterprise = $order->enterprise()->with('user:id,name,email')->firstOrFail();
         $enterprise->user?->notify(new NewPartnerActivityNotification(

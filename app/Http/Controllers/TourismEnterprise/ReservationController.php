@@ -4,6 +4,7 @@ namespace App\Http\Controllers\TourismEnterprise;
 
 use App\Http\Controllers\Controller;
 use App\Models\Reservation;
+use App\Notifications\ReservationPaymentStatusNotification;
 use App\Notifications\ReservationStatusNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -48,8 +49,13 @@ class ReservationController extends Controller
             $reservation->update($data);
         });
 
-        Notification::route('mail', $reservation->customer_email)
-            ->notify(new ReservationStatusNotification($reservation->refresh()));
+        $reservation->refresh();
+        if ($reservation->customer) {
+            $reservation->customer->notify(new ReservationStatusNotification($reservation));
+        } else {
+            Notification::route('mail', $reservation->customer_email)
+                ->notify(new ReservationStatusNotification($reservation));
+        }
 
         return back()->with('success', 'Reservation status updated.');
     }
@@ -60,6 +66,13 @@ class ReservationController extends Controller
         $data = $request->validate(['payment_status' => ['required', Rule::in(['verified', 'rejected'])]]);
         abort_unless($reservation->payment_proof_path && $reservation->payment_status === 'pending_verification', 422);
         $reservation->update(['payment_status' => $data['payment_status'], 'payment_verified_at' => $data['payment_status'] === 'verified' ? now() : null]);
+
+        if ($reservation->customer) {
+            $reservation->customer->notify(new ReservationPaymentStatusNotification($reservation->refresh()));
+        } else {
+            Notification::route('mail', $reservation->customer_email)
+                ->notify(new ReservationPaymentStatusNotification($reservation->refresh()));
+        }
 
         return back()->with('success', 'Payment status updated.');
     }

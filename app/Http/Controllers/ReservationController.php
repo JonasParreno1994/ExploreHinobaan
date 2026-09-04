@@ -64,8 +64,12 @@ class ReservationController extends Controller
             return $reservation;
         });
 
-        Notification::route('mail', $reservation->customer_email)
-            ->notify(new ReservationStatusNotification($reservation));
+        if ($reservation->customer) {
+            $reservation->customer->notify(new ReservationStatusNotification($reservation));
+        } else {
+            Notification::route('mail', $reservation->customer_email)
+                ->notify(new ReservationStatusNotification($reservation));
+        }
 
         $enterprise = $reservation->enterprise()->with('user:id,name,email')->firstOrFail();
         $enterprise->user?->notify(new NewPartnerActivityNotification(
@@ -107,8 +111,12 @@ class ReservationController extends Controller
     private function billableUnits(EnterpriseService $service, array $data): float
     {
         return match ($service->pricing_unit) {
-            'per_night' => max(1, Carbon::parse($data['check_in'])->diffInDays(Carbon::parse($data['check_out']))) * $data['quantity'],
-            'per_hour' => max(1, ceil(Carbon::parse($data['start_time'])->diffInMinutes(Carbon::parse($data['end_time'])) / 60)) * $data['quantity'],
+            'per_night' => isset($data['check_in'], $data['check_out'])
+                ? max(1, Carbon::parse($data['check_in'])->diffInDays(Carbon::parse($data['check_out']))) * $data['quantity']
+                : $data['quantity'],
+            'per_hour' => isset($data['start_time'], $data['end_time'])
+                ? max(1, ceil(Carbon::parse($data['start_time'])->diffInMinutes(Carbon::parse($data['end_time'])) / 60)) * $data['quantity']
+                : $data['quantity'],
             'per_person' => $data['number_of_guests'],
             default => $data['quantity'],
         };

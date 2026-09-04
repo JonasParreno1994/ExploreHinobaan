@@ -1,0 +1,19 @@
+{
+    "name": "Explore Hinoba-an Tourism Portal",
+    "short_name": "Explore Hinoba-an",
+    "description": "Discover destinations, tourism enterprises, local products, maps, and reservations in Hinoba-an.",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "background_color": "#FFFBF5",
+    "theme_color": "#F97316",
+    "icons": [
+        {
+            "src": "/app-icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}

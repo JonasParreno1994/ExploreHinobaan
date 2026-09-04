@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\LocalProductOrder;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -27,7 +28,7 @@ class LocalProductOrderStatusNotification extends Notification implements Should
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return $notifiable instanceof User ? ['mail', 'database'] : ['mail'];
     }
 
     /**
@@ -40,5 +41,20 @@ class LocalProductOrderStatusNotification extends Notification implements Should
         return (new MailMessage)
             ->subject('Product Order '.str($this->order->status)->headline().' · '.$this->order->order_number)
             ->markdown('mail.local-product-orders.status', ['order' => $this->order, 'url' => route('local-product-orders.success', $this->order->order_number)]);
+    }
+
+    /** @return array<string, mixed> */
+    public function toArray(object $notifiable): array
+    {
+        $this->order->loadMissing('enterprise:id,business_name');
+        $status = str($this->order->status)->replace('_', ' ')->headline()->toString();
+
+        return [
+            'activity_type' => 'product_order',
+            'title' => "Product Order {$status}",
+            'message' => "{$this->order->enterprise->business_name} updated your order to {$status}.",
+            'reference' => $this->order->order_number,
+            'url' => route('local-product-orders.success', $this->order->order_number),
+        ];
     }
 }
