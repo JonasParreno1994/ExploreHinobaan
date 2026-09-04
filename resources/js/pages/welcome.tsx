@@ -1,5 +1,4 @@
 import TourismMap, { type MapLocation } from '@/components/landing/tourism-map';
-import { PwaInstallButton } from '@/components/pwa-install-button';
 import { SiteBrand } from '@/components/site-brand';
 import { Head, Link } from '@inertiajs/react';
 import {
@@ -315,7 +314,6 @@ export default function Welcome({
                                 </a>
                             ))}
                         </div>
-                        <PwaInstallButton />
                         <div className="hidden items-center gap-2 lg:flex">
                             <Link
                                 href={route('interactive-map')}
@@ -394,7 +392,7 @@ export default function Welcome({
                 </header>
 
                 <main>
-                    <section id="home" className="relative flex min-h-[820px] items-center overflow-hidden pt-18 text-white">
+                    <section id="home" className="relative flex min-h-[820px] items-center pt-18 text-white">
                         {slides.map((slide, index) => (
                             <img
                                 key={slide.id}

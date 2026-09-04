@@ -49,7 +49,7 @@ test('administrator can review private documents and approve a tourist', functio
 test('registered reservations link to the tourist while guest reservations remain unlinked', function () {
     Notification::fake();
     $enterprise = Enterprise::factory()->create(['application_status' => 'approved']);
-    $service = EnterpriseService::factory()->for($enterprise)->create(['reservation_mode' => 'day']);
+    $service = EnterpriseService::factory()->for($enterprise)->create(['reservation_mode' => 'day', 'quantity' => 2]);
     $payload = ['enterprise_service_id' => $service->id, 'customer_name' => 'Tourist', 'customer_email' => 'tourist@example.com', 'customer_contact' => '09123456789', 'quantity' => 1, 'number_of_guests' => 1, 'reservation_date' => now()->addDays(2)->toDateString()];
     $this->post(route('reservations.store'), $payload)->assertRedirect();
     expect(Reservation::query()->latest('id')->value('customer_id'))->toBeNull();

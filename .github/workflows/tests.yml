@@ -21,7 +21,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.4
+          php-version: 8.2
           tools: composer:v2
           coverage: xdebug
 
@@ -50,4 +50,15 @@ jobs:
         run: php artisan key:generate
 
       - name: Tests
-        run: ./vendor/bin/pest
+        run: |
+          set +e
+          output=$(./vendor/bin/pest --compact 2>&1)
+          status=$?
+          printf '%s\n' "$output"
+
+          if [ "$status" -ne 0 ]; then
+            annotation=$(printf '%s' "$output" | tail -c 60000 | sed -e 's/%/%25/g' -e 's/\r/%0D/g' -e ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=Pest test failure::$annotation"
+          fi
+
+          exit "$status"

@@ -4,6 +4,7 @@ import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { route as routeFn } from 'ziggy-js';
+import { PwaInstallButton } from './components/pwa-install-button';
 import { initializeTheme } from './hooks/use-appearance';
 
 declare global {
@@ -39,7 +40,12 @@ createInertiaApp({
             updateFavicon(branding?.logo_url);
         });
 
-        root.render(<App {...props} />);
+        root.render(
+            <>
+                <App {...props} />
+                <PwaInstallButton />
+            </>,
+        );
     },
     progress: {
         color: '#4B5563',

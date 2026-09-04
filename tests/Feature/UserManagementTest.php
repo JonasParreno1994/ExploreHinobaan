@@ -2,6 +2,7 @@
 
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -143,14 +144,12 @@ test('create and edit pages provide available roles', function () {
         ->get(route('admin.users.create'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/users/create')
-            ->has('roles', 1)
-            ->where('roles.0.id', $role->id));
+            ->where('roles', fn (Collection $roles): bool => $roles->contains('id', $role->id)));
 
     $this->get(route('admin.users.edit', $user))
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/users/edit')
-            ->has('roles', 1)
-            ->where('roles.0.name', 'Content Manager'));
+            ->where('roles', fn (Collection $roles): bool => $roles->contains('name', 'Content Manager')));
 });
 
 test('phone numbers and roles are validated', function () {

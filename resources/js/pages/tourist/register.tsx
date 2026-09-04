@@ -3,4 +3,67 @@ import { SiteBrand } from '@/components/site-brand';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 
-export default function TouristRegister(){const form=useForm({name:'',email:'',phone:'',country:'Philippines',province:'',city_municipality:'',password:'',password_confirmation:''});const submit=(e:FormEvent)=>{e.preventDefault();form.post('/tourist/register')};return <div className="min-h-screen bg-[#FFFBF5] px-5 py-10"><Head title="Create Tourist Account"/><div className="mx-auto max-w-2xl rounded-3xl border border-orange-100 bg-white p-8 shadow-xl"><Link href="/"><SiteBrand subtitle="Tourist Registration"/></Link><h1 className="mt-7 text-3xl font-extrabold">Create your tourist account</h1><p className="mt-2 text-slate-500">Manage bookings and build a trusted, verified profile.</p><form onSubmit={submit} className="mt-7 grid gap-4 sm:grid-cols-2">{[['Full name','name','text'],['Email address','email','email'],['Mobile number','phone','tel'],['Country','country','text'],['Province','province','text'],['City / Municipality','city_municipality','text'],['Password','password','password'],['Confirm password','password_confirmation','password']].map(([label,key,type])=><label key={key} className="text-sm font-bold">{label}<input type={type} value={(form.data as any)[key]} onChange={e=>form.setData(key as any,e.target.value)} className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 font-normal" required={['name','email','phone','country','password','password_confirmation'].includes(key)||(form.data.country==='Philippines'&&['province','city_municipality'].includes(key))}/><InputError message={(form.errors as any)[key]}/></label>)}<button disabled={form.processing} className="h-12 rounded-xl bg-[#F97316] font-bold text-white sm:col-span-2">Create Account</button></form><p className="mt-5 text-center text-sm">Already registered? <Link href="/tourist/login" className="font-bold text-[#0F766E]">Tourist Login</Link></p></div></div>}
+export default function TouristRegister() {
+    const form = useForm({
+        name: '',
+        email: '',
+        phone: '',
+        country: 'Philippines',
+        province: '',
+        city_municipality: '',
+        password: '',
+        password_confirmation: '',
+    });
+    const submit = (e: FormEvent) => {
+        e.preventDefault();
+        form.post('/tourist/register');
+    };
+    return (
+        <div className="min-h-screen bg-[#FFFBF5] px-5 py-10">
+            <Head title="Create Tourist Account" />
+            <div className="mx-auto max-w-2xl rounded-3xl border border-orange-100 bg-white p-8 shadow-xl">
+                <Link href="/">
+                    <SiteBrand subtitle="Tourist Registration" />
+                </Link>
+                <h1 className="mt-7 text-3xl font-extrabold">Create your tourist account</h1>
+                <p className="mt-2 text-slate-500">Manage bookings and build a trusted, verified profile.</p>
+                <form onSubmit={submit} className="mt-7 grid gap-4 sm:grid-cols-2">
+                    {[
+                        ['Full name', 'name', 'text'],
+                        ['Email address', 'email', 'email'],
+                        ['Mobile number', 'phone', 'tel'],
+                        ['Country', 'country', 'text'],
+                        ['Province', 'province', 'text'],
+                        ['City / Municipality', 'city_municipality', 'text'],
+                        ['Password', 'password', 'password'],
+                        ['Confirm password', 'password_confirmation', 'password'],
+                    ].map(([label, key, type]) => (
+                        <label key={key} className="text-sm font-bold">
+                            {label}
+                            <input
+                                type={type}
+                                value={(form.data as any)[key]}
+                                onChange={(e) => form.setData(key as any, e.target.value)}
+                                className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 font-normal"
+                                required={
+                                    ['name', 'email', 'phone', 'country', 'password', 'password_confirmation'].includes(key) ||
+                                    (form.data.country === 'Philippines' && ['province', 'city_municipality'].includes(key))
+                                }
+                            />
+                            <InputError message={(form.errors as any)[key]} />
+                        </label>
+                    ))}
+                    <button disabled={form.processing} className="h-12 rounded-xl bg-[#F97316] font-bold text-white sm:col-span-2">
+                        Create Account
+                    </button>
+                </form>
+                <p className="mt-5 text-center text-sm">
+                    Already registered?{' '}
+                    <Link href="/tourist/login" className="font-bold text-[#0F766E]">
+                        Tourist Login
+                    </Link>
+                </p>
+            </div>
+        </div>
+    );
+}

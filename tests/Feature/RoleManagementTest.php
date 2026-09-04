@@ -2,6 +2,7 @@
 
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('guests are redirected from role management to login', function () {
@@ -17,9 +18,9 @@ test('authenticated users can view roles', function () {
         ->assertSuccessful()
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/roles/index')
-            ->has('roles.data', 1)
-            ->where('roles.data.0.id', $role->id)
-            ->where('roles.data.0.name', 'Tourism Officer'));
+            ->where('roles.data', fn (Collection $roles): bool => $roles->contains(
+                fn (array $listedRole): bool => $listedRole['id'] === $role->id && $listedRole['name'] === 'Tourism Officer',
+            )));
 });
 
 test('authenticated users can add a role', function () {
@@ -39,8 +40,6 @@ test('authenticated users can add a role', function () {
 
 test('role names must be unique', function () {
     $user = User::factory()->create();
-    Role::factory()->create(['name' => 'Administrator']);
-
     $this->actingAs($user)
         ->post('/admin/roles', ['name' => 'Administrator'])
         ->assertSessionHasErrors('name');

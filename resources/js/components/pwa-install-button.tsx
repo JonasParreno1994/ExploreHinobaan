@@ -6,7 +6,7 @@ interface InstallPromptEvent extends Event {
     userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-export function PwaInstallButton({ mobileMenu = false }: { mobileMenu?: boolean }) {
+export function PwaInstallButton() {
     const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
     const [isIos, setIsIos] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -38,7 +38,7 @@ export function PwaInstallButton({ mobileMenu = false }: { mobileMenu?: boolean 
         };
     }, []);
 
-    if (isInstalled || (!installPrompt && !isMobile)) return null;
+    if (isInstalled) return null;
 
     const install = async () => {
         if (isIos || !installPrompt) return setShowIosHelp(true);
@@ -52,11 +52,7 @@ export function PwaInstallButton({ mobileMenu = false }: { mobileMenu?: boolean 
             <button
                 type="button"
                 onClick={install}
-                className={
-                    mobileMenu
-                        ? 'mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-orange-600 bg-white px-4 py-3 text-sm font-bold text-orange-600'
-                        : 'fixed right-4 bottom-4 z-[900] inline-flex items-center gap-2 rounded-xl border border-orange-600 bg-white px-4 py-3 text-sm font-bold text-orange-600 shadow-xl transition hover:bg-orange-50 lg:static lg:px-3 lg:py-2.5 lg:shadow-none'
-                }
+                className="fixed right-4 bottom-4 z-[1900] inline-flex items-center gap-2 rounded-xl border border-orange-600 bg-white px-4 py-3 text-sm font-bold text-orange-600 shadow-xl transition hover:bg-orange-50"
             >
                 <Download className="size-4" /> Install App
             </button>
@@ -84,13 +80,15 @@ export function PwaInstallButton({ mobileMenu = false }: { mobileMenu?: boolean 
                         <p className="mt-2 text-sm leading-6 text-slate-600">
                             {isIos
                                 ? 'On iPhone or iPad, Safari installs this portal from the Share menu.'
-                                : 'On Android, open this portal in Chrome using its secure HTTPS address.'}
+                                : isMobile
+                                  ? 'Open this portal in your browser using its secure HTTPS address, then use the browser menu.'
+                                  : 'Use your browser menu to install this portal as an app. Installation requires a secure HTTPS address.'}
                         </p>
                         <ol className="mt-5 grid gap-3 text-sm text-slate-700">
                             <li className="flex gap-3">
                                 <span className="grid size-7 shrink-0 place-items-center rounded-full bg-teal-50 font-bold text-teal-700">1</span>
                                 <span>
-                                    {isIos ? 'Tap the ' : 'Tap the Chrome menu and choose '}
+                                    {isIos ? 'Tap the ' : 'Open the browser menu and choose '}
                                     <strong className="inline-flex items-center gap-1">
                                         {isIos && <Share2 className="size-4" />} {isIos ? 'Share' : 'Install app'}
                                     </strong>{' '}

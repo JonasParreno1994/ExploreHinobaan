@@ -1,4 +1,5 @@
 import { BackToLanding } from '@/components/back-to-landing';
+import { ReviewSection } from '@/components/reviews/review-section';
 import { Head, useForm } from '@inertiajs/react';
 import { MapPin, ShoppingCart } from 'lucide-react';
 import { FormEvent } from 'react';
@@ -133,7 +134,9 @@ export default function Show({ product, orderSetting, reviews, reviewSummary }: 
                         </button>
                     </form>
                 </aside>
-                <div className="lg:col-span-2"><ReviewSection targetType="product" targetId={product.id} reviews={reviews} summary={reviewSummary} /></div>
+                <div className="lg:col-span-2">
+                    <ReviewSection targetType="product" targetId={product.id} reviews={reviews} summary={reviewSummary} />
+                </div>
             </main>
         </div>
     );
@@ -165,4 +168,3 @@ function Input({
         </label>
     );
 }
-import { ReviewSection } from '@/components/reviews/review-section';

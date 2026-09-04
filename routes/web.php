@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\BannerTextController;
 use App\Http\Controllers\Admin\BarangayController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\DestinationController;
 use App\Http\Controllers\Admin\EnterpriseController;
 use App\Http\Controllers\Admin\EnterpriseTypeController;
@@ -53,7 +54,6 @@ use App\Http\Controllers\Tourist\NotificationController as TouristNotificationCo
 use App\Http\Controllers\Tourist\RegisteredTouristController;
 use App\Http\Controllers\Tourist\VerificationController as TouristVerificationController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('/', LandingPageController::class)->name('home');
 Route::get('interactive-map', InteractiveMapController::class)->name('interactive-map');
@@ -128,9 +128,7 @@ Route::get('reservations/status/{reservation}', [ReservationStatusController::cl
 Route::post('reviews', [PublicReviewController::class, 'store'])->middleware('throttle:5,1')->name('reviews.store');
 
 Route::middleware(['auth', 'role:Administrator,Tourism Staff'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard', AdminDashboardController::class)->name('dashboard');
 
     Route::resource('admin/users', UserController::class)->names('admin.users');
     Route::get('admin/tourists', [AdminTouristController::class, 'index'])->name('admin.tourists.index');
