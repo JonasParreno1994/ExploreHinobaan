@@ -31,3 +31,14 @@ test('the application service worker provides safe same-origin asset caching', f
         ->toContain('self.location.origin')
         ->toContain("request.mode === 'navigate'");
 });
+
+test('the install action is mounted across application pages and remains available without a native prompt', function () {
+    $application = file_get_contents(resource_path('js/app.tsx'));
+    $installButton = file_get_contents(resource_path('js/components/pwa-install-button.tsx'));
+
+    expect($application)
+        ->toContain('<PwaInstallButton />')
+        ->and($installButton)
+        ->toContain('if (isInstalled) return null;')
+        ->not->toContain('!installPrompt && !isMobile');
+});
