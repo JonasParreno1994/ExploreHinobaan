@@ -10,6 +10,8 @@ export interface HeaderSettingFormData {
     tagline: string;
     logo: File | null;
     remove_logo: boolean;
+    social_image: File | null;
+    remove_social_image: boolean;
     login_label: string;
     register_label: string;
     status: string;
@@ -20,6 +22,7 @@ interface HeaderSettingFormProps {
     errors: Partial<Record<keyof HeaderSettingFormData, string>>;
     onChange: <K extends keyof HeaderSettingFormData>(field: K, value: HeaderSettingFormData[K]) => void;
     currentLogoUrl?: string | null;
+    currentSocialImageUrl?: string | null;
 }
 
 const textFields: { key: 'name' | 'site_name' | 'tagline' | 'login_label' | 'register_label'; label: string }[] = [
@@ -30,7 +33,7 @@ const textFields: { key: 'name' | 'site_name' | 'tagline' | 'login_label' | 'reg
     { key: 'register_label', label: 'Header partner button label' },
 ];
 
-export function HeaderSettingForm({ data, errors, onChange, currentLogoUrl }: HeaderSettingFormProps) {
+export function HeaderSettingForm({ data, errors, onChange, currentLogoUrl, currentSocialImageUrl }: HeaderSettingFormProps) {
     return (
         <div className="grid gap-6">
             <div className="grid gap-5 md:grid-cols-2">
@@ -67,6 +70,35 @@ export function HeaderSettingForm({ data, errors, onChange, currentLogoUrl }: He
                     error={errors.logo}
                 />
                 <p className="text-muted-foreground text-xs">Use a square PNG, JPG, or WebP image for the best result.</p>
+            </div>
+            <div className="grid gap-2 border-t pt-6">
+                <Label>Social media preview image</Label>
+                <p className="text-muted-foreground text-sm">
+                    This image appears when the public website link is shared on Facebook, Messenger, X, LinkedIn, and other supported platforms.
+                </p>
+                {currentSocialImageUrl && !data.remove_social_image && !data.social_image && (
+                    <div className="overflow-hidden rounded-xl border bg-slate-50 dark:bg-slate-900/40">
+                        <img src={currentSocialImageUrl} alt="Current social media preview" className="aspect-[1200/630] w-full object-cover" />
+                        <div className="flex items-center justify-between gap-4 p-4">
+                            <p className="text-sm font-medium">Current social preview</p>
+                            <Button type="button" variant="outline" size="sm" onClick={() => onChange('remove_social_image', true)}>
+                                Remove image
+                            </Button>
+                        </div>
+                    </div>
+                )}
+                <ImageUploader
+                    files={data.social_image ? [data.social_image] : []}
+                    onChange={(files) => {
+                        onChange('social_image', files[0] ?? null);
+                        onChange('remove_social_image', false);
+                    }}
+                    multiple={false}
+                    maxFiles={1}
+                    maxSizeMb={5}
+                    error={errors.social_image}
+                />
+                <p className="text-muted-foreground text-xs">Recommended size: 1200 × 630 pixels. Maximum file size: 5 MB.</p>
             </div>
             <div className="grid gap-2">
                 <Label htmlFor="status">Status</Label>

@@ -114,3 +114,65 @@ test('the active header logo is used as the browser favicon', function () {
         ->assertSee('id="site-favicon"', false)
         ->assertSee($header->logo_url, false);
 });
+
+test('administrators can upload and replace the social media preview image', function () {
+    Storage::fake('public');
+    $administrator = siteSettingsAdministrator();
+
+    $this->actingAs($administrator)->post(route('admin.header-settings.store'), [
+        ...validHeaderSettingData(),
+        'social_image' => UploadedFile::fake()->createWithContent(
+            'social-preview.png',
+            base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='),
+        ),
+    ])->assertRedirect(route('admin.settings'))->assertSessionHasNoErrors();
+
+    $header = HeaderSetting::firstOrFail();
+    $originalSocialImagePath = $header->social_image_path;
+
+    expect($originalSocialImagePath)->not->toBeNull();
+    Storage::disk('public')->assertExists($originalSocialImagePath);
+
+    $this->actingAs($administrator)->post(route('admin.header-settings.update', $header), [
+        ...validHeaderSettingData(),
+        '_method' => 'put',
+        'social_image' => UploadedFile::fake()->createWithContent(
+            'updated-social-preview.png',
+            base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='),
+        ),
+    ])->assertRedirect(route('admin.settings'))->assertSessionHasNoErrors();
+
+    $updatedSocialImagePath = $header->refresh()->social_image_path;
+
+    expect($updatedSocialImagePath)->not->toBe($originalSocialImagePath);
+    Storage::disk('public')->assertMissing($originalSocialImagePath);
+    Storage::disk('public')->assertExists($updatedSocialImagePath);
+});
+
+test('social media preview uploads must be valid images', function () {
+    Storage::fake('public');
+
+    $this->actingAs(siteSettingsAdministrator())->post(route('admin.header-settings.store'), [
+        ...validHeaderSettingData(),
+        'social_image' => UploadedFile::fake()->create('preview.pdf', 100, 'application/pdf'),
+    ])->assertSessionHasErrors('social_image');
+
+    expect(HeaderSetting::query()->exists())->toBeFalse();
+});
+
+test('the active header social image is rendered in share metadata', function () {
+    $header = HeaderSetting::factory()->create([
+        'site_name' => 'Visit Hinoba-an',
+        'tagline' => 'Discover the southern jewel of Negros Occidental.',
+        'social_image_path' => 'social-previews/hinobaan.jpg',
+        'status' => 'active',
+    ]);
+
+    $this->get(route('home'))
+        ->assertSuccessful()
+        ->assertSee('property="og:title" content="Visit Hinoba-an"', false)
+        ->assertSee('property="og:description" content="Discover the southern jewel of Negros Occidental."', false)
+        ->assertSee('property="og:image" content="'.url($header->social_image_url).'"', false)
+        ->assertSee('name="twitter:card" content="summary_large_image"', false)
+        ->assertSee('name="twitter:image" content="'.url($header->social_image_url).'"', false);
+});
