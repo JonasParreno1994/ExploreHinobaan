@@ -49,7 +49,10 @@ test('the install action is mounted across application pages and only appears wh
     expect($application)
         ->toContain('<PwaInstallButton />')
         ->and($installButton)
-        ->toContain('if (isInstalled || (!isIos && !installPrompt)) return null;')
+        ->toContain("router.on('navigate'")
+        ->toContain("event.detail.page.component === 'interactive-map'")
+        ->toContain('if (isInteractiveMap ||')
+        ->not->toContain('usePage')
         ->toContain('await installPrompt.prompt();')
         ->toContain('setShowIosHelp(true);');
 });

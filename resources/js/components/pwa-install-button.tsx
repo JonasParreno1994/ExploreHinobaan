@@ -1,3 +1,4 @@
+import { router } from '@inertiajs/react';
 import { Download, Share2, Smartphone, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -7,6 +8,7 @@ interface InstallPromptEvent extends Event {
 }
 
 export function PwaInstallButton() {
+    const [isInteractiveMap, setIsInteractiveMap] = useState(() => window.location.pathname === '/interactive-map');
     const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
     const [isIos, setIsIos] = useState(false);
     const [isInstalled, setIsInstalled] = useState(true);
@@ -30,13 +32,18 @@ export function PwaInstallButton() {
         };
         window.addEventListener('beforeinstallprompt', capturePrompt);
         window.addEventListener('appinstalled', installed);
+        const removeNavigateListener = router.on('navigate', (event) => {
+            setIsInteractiveMap(event.detail.page.component === 'interactive-map');
+        });
+
         return () => {
             window.removeEventListener('beforeinstallprompt', capturePrompt);
             window.removeEventListener('appinstalled', installed);
+            removeNavigateListener();
         };
     }, []);
 
-    if (isInstalled || (!isIos && !installPrompt)) return null;
+    if (isInteractiveMap || isInstalled || (!isIos && !installPrompt)) return null;
 
     const install = async () => {
         if (isIos) {

@@ -16,7 +16,7 @@ class HeaderSetting extends Model
 
     protected $appends = ['logo_url', 'social_image_url'];
 
-    protected $attributes = ['login_label' => 'Login', 'register_label' => 'Register', 'status' => 'active'];
+    protected $attributes = ['login_label' => 'Login', 'register_label' => 'Be a Partner', 'status' => 'active'];
 
     public function getLogoUrlAttribute(): ?string
     {

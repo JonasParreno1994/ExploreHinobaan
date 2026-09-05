@@ -3,7 +3,23 @@ import { SiteBrand } from '@/components/site-brand';
 import { Head, Link } from '@inertiajs/react';
 import { divIcon, latLngBounds } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Expand, ExternalLink, Layers3, LocateFixed, MapPin, Navigation, Phone, Search, SlidersHorizontal, X } from 'lucide-react';
+import {
+    Car,
+    Clock3,
+    Expand,
+    ExternalLink,
+    Footprints,
+    Layers3,
+    LoaderCircle,
+    LocateFixed,
+    MapPin,
+    Navigation,
+    Phone,
+    Route as RouteIcon,
+    Search,
+    SlidersHorizontal,
+    X,
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 
@@ -21,6 +37,21 @@ interface Place {
     details_url: string | null;
     kind: 'destination' | 'enterprise';
 }
+
+interface RouteStep {
+    instruction: string;
+    distance: number;
+    duration: number;
+}
+
+interface RouteResult {
+    positions: [number, number][];
+    distance: number;
+    duration: number;
+    steps: RouteStep[];
+}
+
+type TravelMode = 'driving-car' | 'foot-walking';
 
 const fallbackImage = '/images/landing/hinobaan-hero.png';
 const defaultCenter: [number, number] = [9.585, 122.47];
@@ -56,11 +87,13 @@ function MapActions({
     focusedId,
     recenterSignal,
     visitorLocation,
+    routePositions,
 }: {
     places: Place[];
     focusedId: string | null;
     recenterSignal: number;
     visitorLocation: [number, number] | null;
+    routePositions: [number, number][];
 }) {
     const map = useMap();
     useEffect(() => {
@@ -76,13 +109,18 @@ function MapActions({
         if (!place) return;
 
         const destination: [number, number] = [Number(place.latitude), Number(place.longitude)];
+        if (routePositions.length > 1) {
+            map.fitBounds(latLngBounds(routePositions), { padding: [70, 70], maxZoom: 16 });
+            return;
+        }
+
         if (visitorLocation) {
             map.fitBounds(latLngBounds([visitorLocation, destination]), { padding: [70, 70], maxZoom: 15 });
             return;
         }
 
         map.flyTo(destination, 16, { duration: 0.8 });
-    }, [focusedId, map, places, visitorLocation]);
+    }, [focusedId, map, places, routePositions, visitorLocation]);
     return null;
 }
 
@@ -96,6 +134,11 @@ export default function InteractiveMap({ places }: { places: Place[] }) {
     const [visitorLocation, setVisitorLocation] = useState<[number, number] | null>(null);
     const [locating, setLocating] = useState(false);
     const [locationMessage, setLocationMessage] = useState<string | null>(null);
+    const [directionsOpen, setDirectionsOpen] = useState(false);
+    const [travelMode, setTravelMode] = useState<TravelMode>('driving-car');
+    const [routeResult, setRouteResult] = useState<RouteResult | null>(null);
+    const [routeLoading, setRouteLoading] = useState(false);
+    const [routeError, setRouteError] = useState<string | null>(null);
     const mapAreaRef = useRef<HTMLElement>(null);
     const categories = useMemo(() => [...new Set(places.map((place) => place.category))].sort(), [places]);
     const categoryColors = useMemo(
@@ -114,6 +157,82 @@ export default function InteractiveMap({ places }: { places: Place[] }) {
         [activeCategories, places, query],
     );
     const focusedPlace = places.find((place) => place.id === focusedId) ?? null;
+
+    async function loadRoute(place: Place, origin: [number, number], mode: TravelMode): Promise<void> {
+        setRouteLoading(true);
+        setRouteError(null);
+        setRouteResult(null);
+
+        const parameters = new URLSearchParams({
+            origin_latitude: String(origin[0]),
+            origin_longitude: String(origin[1]),
+            destination_latitude: place.latitude,
+            destination_longitude: place.longitude,
+            travel_mode: mode,
+        });
+
+        try {
+            const response = await fetch(`${route('directions.route')}?${parameters}`, {
+                headers: { Accept: 'application/json' },
+            });
+            const result = (await response.json()) as RouteResult & { message?: string };
+
+            if (!response.ok) {
+                throw new Error(result.message || 'A route could not be calculated.');
+            }
+
+            setRouteResult(result);
+            setLocationMessage(`Road route to ${place.name} is displayed.`);
+        } catch (error) {
+            setRouteError(error instanceof Error ? error.message : 'A route could not be calculated.');
+        } finally {
+            setRouteLoading(false);
+        }
+    }
+
+    function openDirections(place: Place): void {
+        setFocusedId(place.id);
+        setSidebarOpen(false);
+        setDirectionsOpen(true);
+        setRouteResult(null);
+        setRouteError(null);
+
+        if (!navigator.geolocation) {
+            setRouteError('Location services are not supported by this browser.');
+            return;
+        }
+
+        setRouteLoading(true);
+        navigator.geolocation.getCurrentPosition(
+            ({ coords }) => {
+                const origin: [number, number] = [coords.latitude, coords.longitude];
+                setVisitorLocation(origin);
+                void loadRoute(place, origin, travelMode);
+            },
+            (error) => {
+                setRouteError(
+                    error.code === error.PERMISSION_DENIED
+                        ? 'Location permission was denied. Allow access or open the route in Google Maps.'
+                        : 'Your current location could not be determined.',
+                );
+                setRouteLoading(false);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+        );
+    }
+
+    function changeTravelMode(mode: TravelMode): void {
+        setTravelMode(mode);
+        if (focusedPlace && visitorLocation) {
+            void loadRoute(focusedPlace, visitorLocation, mode);
+        }
+    }
+
+    function googleDirectionsUrl(place: Place): string {
+        const googleMode = travelMode === 'foot-walking' ? 'walking' : 'driving';
+
+        return `https://www.google.com/maps/dir/?api=1&destination=${place.latitude},${place.longitude}&travelmode=${googleMode}&dir_action=navigate`;
+    }
 
     function toggleCategory(category: string): void {
         setActiveCategories((current) => {
@@ -300,7 +419,13 @@ export default function InteractiveMap({ places }: { places: Place[] }) {
                                 : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
                         }
                     />
-                    <MapActions places={filteredPlaces} focusedId={focusedId} recenterSignal={recenterSignal} visitorLocation={visitorLocation} />
+                    <MapActions
+                        places={filteredPlaces}
+                        focusedId={focusedId}
+                        recenterSignal={recenterSignal}
+                        visitorLocation={visitorLocation}
+                        routePositions={routeResult?.positions ?? []}
+                    />
                     {visitorLocation && (
                         <Marker position={visitorLocation} icon={visitorMarker}>
                             <Popup>
@@ -308,12 +433,14 @@ export default function InteractiveMap({ places }: { places: Place[] }) {
                             </Popup>
                         </Marker>
                     )}
-                    {visitorLocation && focusedPlace && (
+                    {routeResult ? (
+                        <Polyline positions={routeResult.positions} pathOptions={{ color: '#0284C7', weight: 6, opacity: 0.95 }} />
+                    ) : visitorLocation && focusedPlace ? (
                         <Polyline
                             positions={[visitorLocation, [Number(focusedPlace.latitude), Number(focusedPlace.longitude)]]}
                             pathOptions={{ color: '#0284C7', weight: 5, opacity: 0.9, dashArray: '10 10' }}
                         />
-                    )}
+                    ) : null}
                     {filteredPlaces.map((place) => (
                         <Marker
                             key={place.id}
@@ -348,15 +475,14 @@ export default function InteractiveMap({ places }: { places: Place[] }) {
                                         </div>
                                     </div>
                                     <div className="mt-3 flex gap-2 border-t border-orange-100 pt-3">
-                                        <a
-                                            href={`https://www.google.com/maps/dir/?api=1&destination=${place.latitude},${place.longitude}`}
-                                            target="_blank"
-                                            rel="noreferrer"
+                                        <button
+                                            type="button"
+                                            onClick={() => openDirections(place)}
                                             className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#F97316] px-2 py-2.5 text-xs font-bold text-white hover:bg-[#C2410C]"
                                         >
                                             <Navigation className="size-4" />
                                             Get Directions
-                                        </a>
+                                        </button>
                                         {place.details_url && (
                                             <a
                                                 href={place.details_url}
@@ -423,6 +549,139 @@ export default function InteractiveMap({ places }: { places: Place[] }) {
                     Showing {filteredPlaces.length} mapped place{filteredPlaces.length === 1 ? '' : 's'}
                 </div>
             </section>
+
+            {directionsOpen && focusedPlace && (
+                <>
+                    <button
+                        type="button"
+                        aria-label="Close directions"
+                        className="fixed inset-0 z-[1400] bg-slate-950/45"
+                        onClick={() => setDirectionsOpen(false)}
+                    />
+                    <section
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="directions-title"
+                        className="fixed inset-x-0 bottom-0 z-[1500] flex max-h-[82vh] flex-col rounded-t-3xl bg-white shadow-2xl md:inset-y-0 md:right-0 md:left-auto md:max-h-none md:w-[430px] md:rounded-none"
+                    >
+                        <div className="flex items-start justify-between gap-4 border-b border-orange-100 p-5">
+                            <div className="min-w-0">
+                                <p className="text-xs font-bold tracking-wide text-[#F97316] uppercase">Directions to</p>
+                                <h2 id="directions-title" className="mt-1 truncate text-xl font-bold text-[#0F766E]">
+                                    {focusedPlace.name}
+                                </h2>
+                                <p className="mt-1 flex items-center gap-1 text-xs text-[#64748B]">
+                                    <MapPin className="size-3.5 shrink-0" /> {focusedPlace.address || 'Hinoba-an'}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setDirectionsOpen(false)}
+                                className="rounded-full p-2 text-slate-500 hover:bg-slate-100"
+                                aria-label="Close directions"
+                            >
+                                <X className="size-5" />
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 border-b border-orange-100 p-4">
+                            <button
+                                type="button"
+                                onClick={() => changeTravelMode('driving-car')}
+                                className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold transition ${travelMode === 'driving-car' ? 'bg-[#0F766E] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                            >
+                                <Car className="size-4" /> Driving
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => changeTravelMode('foot-walking')}
+                                className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold transition ${travelMode === 'foot-walking' ? 'bg-[#0F766E] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                            >
+                                <Footprints className="size-4" /> Walking
+                            </button>
+                        </div>
+
+                        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+                            {routeLoading && (
+                                <div className="grid place-items-center py-12 text-center">
+                                    <LoaderCircle className="size-9 animate-spin text-[#F97316]" />
+                                    <p className="mt-3 font-semibold">Calculating the best route…</p>
+                                    <p className="mt-1 text-xs text-[#64748B]">Using your current location</p>
+                                </div>
+                            )}
+
+                            {!routeLoading && routeError && (
+                                <div role="alert" className="rounded-2xl border border-orange-200 bg-orange-50 p-4">
+                                    <p className="font-bold text-orange-900">In-app route unavailable</p>
+                                    <p className="mt-1 text-sm leading-6 text-orange-800">{routeError}</p>
+                                </div>
+                            )}
+
+                            {!routeLoading && routeResult && (
+                                <div className="grid gap-5">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="rounded-2xl bg-sky-50 p-4 text-sky-900">
+                                            <RouteIcon className="size-5" />
+                                            <p className="mt-2 text-2xl font-bold">{(routeResult.distance / 1000).toFixed(1)} km</p>
+                                            <p className="text-xs">Route distance</p>
+                                        </div>
+                                        <div className="rounded-2xl bg-teal-50 p-4 text-teal-900">
+                                            <Clock3 className="size-5" />
+                                            <p className="mt-2 text-2xl font-bold">{Math.max(1, Math.round(routeResult.duration / 60))} min</p>
+                                            <p className="text-xs">Estimated time</p>
+                                        </div>
+                                    </div>
+                                    <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+                                        Routes may begin or end at the nearest mapped road or trail. Follow local signs and safety guidance near the
+                                        site.
+                                    </p>
+                                    <div>
+                                        <h3 className="font-bold">Route steps</h3>
+                                        <ol className="mt-3 grid gap-3">
+                                            {routeResult.steps.map((step, index) => (
+                                                <li
+                                                    key={`${step.instruction}-${index}`}
+                                                    className="flex gap-3 rounded-xl border border-slate-100 p-3"
+                                                >
+                                                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-orange-50 text-xs font-bold text-[#F97316]">
+                                                        {index + 1}
+                                                    </span>
+                                                    <span className="min-w-0 text-sm">
+                                                        <span className="block font-medium">{step.instruction}</span>
+                                                        <span className="mt-1 block text-xs text-[#64748B]">
+                                                            {step.distance >= 1000
+                                                                ? `${(step.distance / 1000).toFixed(1)} km`
+                                                                : `${Math.round(step.distance)} m`}
+                                                        </span>
+                                                    </span>
+                                                </li>
+                                            ))}
+                                        </ol>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="grid gap-2 border-t border-orange-100 bg-white p-4 sm:grid-cols-2 md:grid-cols-1">
+                            <a
+                                href={googleDirectionsUrl(focusedPlace)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#F97316] px-4 py-3 text-sm font-bold text-white hover:bg-[#C2410C]"
+                            >
+                                <Navigation className="size-4" /> Start in Google Maps
+                            </a>
+                            <button
+                                type="button"
+                                onClick={() => setDirectionsOpen(false)}
+                                className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                            >
+                                Continue exploring
+                            </button>
+                        </div>
+                    </section>
+                </>
+            )}
 
             <button
                 type="button"

@@ -22,7 +22,7 @@ class HeaderSettingFactory extends Factory
             'site_name' => 'Explore Hinoba-an',
             'tagline' => 'Tourism Portal',
             'login_label' => 'Login',
-            'register_label' => 'Register',
+            'register_label' => 'Be a Partner',
             'status' => 'active',
         ];
     }
