@@ -9,7 +9,6 @@ interface InstallPromptEvent extends Event {
 export function PwaInstallButton() {
     const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
     const [isIos, setIsIos] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
     const [isInstalled, setIsInstalled] = useState(true);
     const [showIosHelp, setShowIosHelp] = useState(false);
 
@@ -19,7 +18,6 @@ export function PwaInstallButton() {
             ('standalone' in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
         setIsInstalled(standalone);
         setIsIos(/iphone|ipad|ipod/i.test(navigator.userAgent));
-        setIsMobile(/android|iphone|ipad|ipod/i.test(navigator.userAgent));
 
         const capturePrompt = (event: Event) => {
             event.preventDefault();
@@ -38,13 +36,22 @@ export function PwaInstallButton() {
         };
     }, []);
 
-    if (isInstalled) return null;
+    if (isInstalled || (!isIos && !installPrompt)) return null;
 
     const install = async () => {
-        if (isIos || !installPrompt) return setShowIosHelp(true);
+        if (isIos) {
+            setShowIosHelp(true);
+
+            return;
+        }
+
+        if (!installPrompt) {
+            return;
+        }
+
         await installPrompt.prompt();
-        const result = await installPrompt.userChoice;
-        if (result.outcome === 'accepted') setInstallPrompt(null);
+        await installPrompt.userChoice;
+        setInstallPrompt(null);
     };
 
     return (
@@ -77,35 +84,28 @@ export function PwaInstallButton() {
                             </button>
                         </div>
                         <h2 className="mt-5 text-2xl font-extrabold text-slate-900">Install Explore Hinoba-an</h2>
-                        <p className="mt-2 text-sm leading-6 text-slate-600">
-                            {isIos
-                                ? 'On iPhone or iPad, Safari installs this portal from the Share menu.'
-                                : isMobile
-                                  ? 'Open this portal in your browser using its secure HTTPS address, then use the browser menu.'
-                                  : 'Use your browser menu to install this portal as an app. Installation requires a secure HTTPS address.'}
-                        </p>
+                        <p className="mt-2 text-sm leading-6 text-slate-600">On iPhone or iPad, Safari installs this portal from the Share menu.</p>
                         <ol className="mt-5 grid gap-3 text-sm text-slate-700">
                             <li className="flex gap-3">
                                 <span className="grid size-7 shrink-0 place-items-center rounded-full bg-teal-50 font-bold text-teal-700">1</span>
                                 <span>
-                                    {isIos ? 'Tap the ' : 'Open the browser menu and choose '}
+                                    Tap the{' '}
                                     <strong className="inline-flex items-center gap-1">
-                                        {isIos && <Share2 className="size-4" />} {isIos ? 'Share' : 'Install app'}
+                                        <Share2 className="size-4" /> Share
                                     </strong>{' '}
-                                    {isIos && 'button in Safari.'}
+                                    button in Safari.
                                 </span>
                             </li>
                             <li className="flex gap-3">
                                 <span className="grid size-7 shrink-0 place-items-center rounded-full bg-teal-50 font-bold text-teal-700">2</span>
                                 <span>
-                                    {isIos ? 'Scroll down and choose ' : 'If Install app is unavailable, choose '}
-                                    <strong>Add to Home Screen</strong>.
+                                    Scroll down and choose <strong>Add to Home Screen</strong>.
                                 </span>
                             </li>
                             <li className="flex gap-3">
                                 <span className="grid size-7 shrink-0 place-items-center rounded-full bg-teal-50 font-bold text-teal-700">3</span>
                                 <span>
-                                    Tap <strong>{isIos ? 'Add' : 'Install'}</strong> to install the tourism portal.
+                                    Tap <strong>Add</strong> to install the tourism portal.
                                 </span>
                             </li>
                         </ol>
