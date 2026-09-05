@@ -15,6 +15,7 @@ interface HeaderSetting extends SiteSetting {
     site_name: string;
     tagline: string;
     logo_url: string | null;
+    social_image_url: string | null;
 }
 
 interface FooterSetting extends SiteSetting {
@@ -73,6 +74,15 @@ export default function SettingsIndex({
                                     </div>
                                     <p className="text-muted-foreground mt-1 text-sm">{headerSetting.tagline}</p>
                                     <p className="text-muted-foreground mt-3 text-xs">Configuration: {headerSetting.name}</p>
+                                    {headerSetting.social_image_url && (
+                                        <div className="mt-4 overflow-hidden rounded-lg border bg-white">
+                                            <img
+                                                src={headerSetting.social_image_url}
+                                                alt="Social media preview"
+                                                className="aspect-[1200/630] w-full object-cover"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <p className="text-muted-foreground text-sm">No header configuration has been created yet.</p>

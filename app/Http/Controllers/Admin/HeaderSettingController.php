@@ -23,10 +23,14 @@ class HeaderSettingController extends Controller
 
     public function store(StoreHeaderSettingRequest $request): RedirectResponse
     {
-        $data = $request->safe()->except(['logo', 'remove_logo']);
+        $data = $request->safe()->except(['logo', 'remove_logo', 'social_image', 'remove_social_image']);
 
         if ($request->hasFile('logo')) {
             $data['logo_path'] = $request->file('logo')->store('header-logos', 'public');
+        }
+
+        if ($request->hasFile('social_image')) {
+            $data['social_image_path'] = $request->file('social_image')->store('social-previews', 'public');
         }
 
         HeaderSetting::create($data);
@@ -43,7 +47,7 @@ class HeaderSettingController extends Controller
 
     public function update(UpdateHeaderSettingRequest $request, HeaderSetting $headerSetting): RedirectResponse
     {
-        $data = $request->safe()->except(['logo', 'remove_logo']);
+        $data = $request->safe()->except(['logo', 'remove_logo', 'social_image', 'remove_social_image']);
 
         if ($request->boolean('remove_logo') || $request->hasFile('logo')) {
             if ($headerSetting->logo_path) {
@@ -55,6 +59,18 @@ class HeaderSettingController extends Controller
 
         if ($request->hasFile('logo')) {
             $data['logo_path'] = $request->file('logo')->store('header-logos', 'public');
+        }
+
+        if ($request->boolean('remove_social_image') || $request->hasFile('social_image')) {
+            if ($headerSetting->social_image_path) {
+                Storage::disk('public')->delete($headerSetting->social_image_path);
+            }
+
+            $data['social_image_path'] = null;
+        }
+
+        if ($request->hasFile('social_image')) {
+            $data['social_image_path'] = $request->file('social_image')->store('social-previews', 'public');
         }
 
         $headerSetting->update($data);

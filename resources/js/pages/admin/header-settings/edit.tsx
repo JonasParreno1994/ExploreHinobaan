@@ -5,9 +5,10 @@ import AdminLayout from '@/layouts/admin-layout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 
-interface HeaderSetting extends Omit<HeaderSettingFormData, 'logo' | 'remove_logo'> {
+interface HeaderSetting extends Omit<HeaderSettingFormData, 'logo' | 'remove_logo' | 'social_image' | 'remove_social_image'> {
     id: number;
     logo_url: string | null;
+    social_image_url: string | null;
 }
 
 export default function EditHeaderSetting({ headerSetting }: { headerSetting: HeaderSetting }) {
@@ -17,6 +18,8 @@ export default function EditHeaderSetting({ headerSetting }: { headerSetting: He
         tagline: headerSetting.tagline,
         logo: null,
         remove_logo: false,
+        social_image: null,
+        remove_social_image: false,
         login_label: headerSetting.login_label,
         register_label: headerSetting.register_label,
         status: headerSetting.status,
@@ -46,7 +49,13 @@ export default function EditHeaderSetting({ headerSetting }: { headerSetting: He
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={submit} className="grid gap-6">
-                        <HeaderSettingForm data={form.data} errors={form.errors} onChange={form.setData} currentLogoUrl={headerSetting.logo_url} />
+                        <HeaderSettingForm
+                            data={form.data}
+                            errors={form.errors}
+                            onChange={form.setData}
+                            currentLogoUrl={headerSetting.logo_url}
+                            currentSocialImageUrl={headerSetting.social_image_url}
+                        />
                         {form.hasErrors && (
                             <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                                 Some fields could not be saved. Review the messages above and try again.
