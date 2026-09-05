@@ -15,7 +15,7 @@ export default function CreateHeaderSetting() {
         social_image: null,
         remove_social_image: false,
         login_label: 'Login',
-        register_label: 'Register',
+        register_label: 'Be a Partner',
         status: 'active',
     });
 

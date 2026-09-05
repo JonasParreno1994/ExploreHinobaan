@@ -320,7 +320,7 @@ export default function Welcome({
                                 className="inline-flex items-center gap-2 rounded-xl border border-[#0F766E] px-3 py-2.5 text-sm font-bold text-[#0F766E] transition hover:bg-[#0F766E] hover:text-white"
                             >
                                 <MapPin className="size-4" />
-                                Interactive Map
+                                Explore Map
                             </Link>
                             <Link
                                 href={route('partner.login')}
@@ -377,7 +377,7 @@ export default function Welcome({
                                     className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-[#0F766E] px-4 py-3 text-sm font-bold text-white"
                                 >
                                     <MapPin className="size-4" />
-                                    Interactive Map
+                                    Explore Map
                                 </Link>
                                 <Link
                                     href={route('partner.login')}
@@ -925,7 +925,7 @@ export default function Welcome({
                                     className="inline-flex items-center gap-2 rounded-xl bg-[#F97316] px-7 py-3.5 font-bold text-white shadow-lg shadow-orange-500/20 transition hover:-translate-y-0.5 hover:bg-[#C2410C]"
                                 >
                                     <MapPin className="size-5" />
-                                    Open Interactive Map
+                                    Explore Map
                                     <ArrowRight className="size-4" />
                                 </Link>
                             </div>

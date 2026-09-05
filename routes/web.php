@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\TouristVerificationController as AdminTouristVeri
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WhyVisitSectionController;
 use App\Http\Controllers\DestinationController as PublicDestinationController;
+use App\Http\Controllers\DirectionsController;
 use App\Http\Controllers\EnterpriseController as PublicEnterpriseController;
 use App\Http\Controllers\EnterpriseServiceController as PublicEnterpriseServiceController;
 use App\Http\Controllers\InteractiveMapController;
@@ -57,6 +58,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', LandingPageController::class)->name('home');
 Route::get('interactive-map', InteractiveMapController::class)->name('interactive-map');
+Route::get('directions/route', DirectionsController::class)->middleware('throttle:30,1')->name('directions.route');
 
 Route::middleware('guest')->prefix('tourist')->name('tourist.')->group(function () {
     Route::get('login', [TouristSessionController::class, 'create'])->name('login');

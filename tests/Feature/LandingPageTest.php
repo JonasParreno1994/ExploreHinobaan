@@ -7,6 +7,7 @@ use App\Models\Destination;
 use App\Models\Enterprise;
 use App\Models\EnterpriseType;
 use App\Models\Event;
+use App\Models\HeaderSetting;
 use App\Models\TourismCategory;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -85,4 +86,13 @@ test('landing page carousel uses active pictures with one permanent text block',
         ->where('heroText.header_1', 'Header one')
         ->where('heroText.header_2', 'Header two')
         ->where('heroText.header_3', 'Header three'));
+});
+
+test('landing page uses the partner and map call to action labels', function () {
+    $landingPage = file_get_contents(resource_path('js/pages/welcome.tsx'));
+
+    expect(new HeaderSetting)->register_label->toBe('Be a Partner')
+        ->and($landingPage)->toContain("headerSetting?.register_label ?? 'Be a Partner'")
+        ->and(substr_count($landingPage, 'Explore Map'))->toBe(3)
+        ->and($landingPage)->not->toContain('Interactive Map');
 });
