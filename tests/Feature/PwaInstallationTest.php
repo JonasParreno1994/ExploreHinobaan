@@ -7,8 +7,7 @@ test('the public portal exposes installable application metadata', function () {
         ->assertSee('apple-mobile-web-app-capable', false)
         ->assertSee('#F97316', false);
 
-    expect(public_path('manifest.webmanifest'))->toBeFile()
-        ->and(public_path('service-worker.js'))->toBeFile()
+    expect(public_path('service-worker.js'))->toBeFile()
         ->and(public_path('offline.html'))->toBeFile()
         ->and(public_path('icons/icon-192.png'))->toBeFile()
         ->and(public_path('icons/icon-512.png'))->toBeFile()
@@ -16,7 +15,17 @@ test('the public portal exposes installable application metadata', function () {
         ->and(public_path('icons/icon-maskable-512.png'))->toBeFile()
         ->and(public_path('icons/apple-touch-icon.png'))->toBeFile();
 
-    $manifest = json_decode(file_get_contents(public_path('manifest.webmanifest')), true, flags: JSON_THROW_ON_ERROR);
+    expect(getimagesize(public_path('icons/icon-192.png')))
+        ->toMatchArray([192, 192])
+        ->and(getimagesize(public_path('icons/icon-512.png')))->toMatchArray([512, 512])
+        ->and(getimagesize(public_path('icons/icon-maskable-192.png')))->toMatchArray([192, 192])
+        ->and(getimagesize(public_path('icons/icon-maskable-512.png')))->toMatchArray([512, 512])
+        ->and(getimagesize(public_path('icons/apple-touch-icon.png')))->toMatchArray([180, 180]);
+
+    $manifest = $this->get(route('webapp.manifest'))
+        ->assertSuccessful()
+        ->assertHeader('Content-Type', 'application/manifest+json')
+        ->json();
 
     expect($manifest)
         ->toMatchArray([
@@ -35,6 +44,7 @@ test('the application service worker provides safe same-origin asset caching', f
     $serviceWorker = file_get_contents(public_path('service-worker.js'));
 
     expect($serviceWorker)
+        ->toContain("const CACHE_NAME = 'explore-hinobaan-v3'")
         ->toContain("request.method !== 'GET'")
         ->toContain('self.location.origin')
         ->toContain("request.mode === 'navigate'")

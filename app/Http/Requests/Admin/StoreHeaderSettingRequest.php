@@ -30,6 +30,8 @@ class StoreHeaderSettingRequest extends FormRequest
             'remove_logo' => ['sometimes', 'boolean'],
             'social_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'remove_social_image' => ['sometimes', 'boolean'],
+            'webapp_logo' => ['nullable', 'image', 'mimes:png', 'dimensions:width=512,height=512', 'max:2048'],
+            'remove_webapp_logo' => ['sometimes', 'boolean'],
             'login_label' => ['required', 'string', 'max:50'],
             'register_label' => ['required', 'string', 'max:50'],
             'status' => ['required', Rule::in(['active', 'inactive'])],

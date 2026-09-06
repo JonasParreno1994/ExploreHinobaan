@@ -5,10 +5,12 @@ import AdminLayout from '@/layouts/admin-layout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { type FormEvent } from 'react';
 
-interface HeaderSetting extends Omit<HeaderSettingFormData, 'logo' | 'remove_logo' | 'social_image' | 'remove_social_image'> {
+interface HeaderSetting
+    extends Omit<HeaderSettingFormData, 'logo' | 'remove_logo' | 'social_image' | 'remove_social_image' | 'webapp_logo' | 'remove_webapp_logo'> {
     id: number;
     logo_url: string | null;
     social_image_url: string | null;
+    webapp_logo_url: string | null;
 }
 
 export default function EditHeaderSetting({ headerSetting }: { headerSetting: HeaderSetting }) {
@@ -20,6 +22,8 @@ export default function EditHeaderSetting({ headerSetting }: { headerSetting: He
         remove_logo: false,
         social_image: null,
         remove_social_image: false,
+        webapp_logo: null,
+        remove_webapp_logo: false,
         login_label: headerSetting.login_label,
         register_label: headerSetting.register_label,
         status: headerSetting.status,
@@ -55,6 +59,7 @@ export default function EditHeaderSetting({ headerSetting }: { headerSetting: He
                             onChange={form.setData}
                             currentLogoUrl={headerSetting.logo_url}
                             currentSocialImageUrl={headerSetting.social_image_url}
+                            currentWebappLogoUrl={headerSetting.webapp_logo_url}
                         />
                         {form.hasErrors && (
                             <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

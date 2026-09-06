@@ -176,3 +176,62 @@ test('the active header social image is rendered in share metadata', function ()
         ->assertSee('name="twitter:card" content="summary_large_image"', false)
         ->assertSee('name="twitter:image" content="'.url($header->social_image_url).'"', false);
 });
+
+test('administrators can manage the web app logo', function () {
+    Storage::fake('public');
+    $administrator = siteSettingsAdministrator();
+
+    $this->actingAs($administrator)->post(route('admin.header-settings.store'), [
+        ...validHeaderSettingData(),
+        'webapp_logo' => UploadedFile::fake()->createWithContent('webapp-logo.png', file_get_contents(public_path('icons/icon-512.png'))),
+    ])->assertRedirect(route('admin.settings'))->assertSessionHasNoErrors();
+
+    $header = HeaderSetting::firstOrFail();
+    $originalLogoPath = $header->webapp_logo_path;
+
+    expect($originalLogoPath)->not->toBeNull();
+    Storage::disk('public')->assertExists($originalLogoPath);
+
+    $manifest = $this->get(route('webapp.manifest'))->assertSuccessful()->json();
+    expect($manifest['icons'][0]['src'])->toBe($header->webapp_logo_url)
+        ->and($manifest['icons'][0]['sizes'])->toBe('512x512');
+
+    $this->actingAs($administrator)->post(route('admin.header-settings.update', $header), [
+        ...validHeaderSettingData(),
+        '_method' => 'put',
+        'remove_webapp_logo' => true,
+    ])->assertRedirect(route('admin.settings'))->assertSessionHasNoErrors();
+
+    expect($header->refresh()->webapp_logo_path)->toBeNull();
+    Storage::disk('public')->assertMissing($originalLogoPath);
+});
+
+test('web app logos must be 512 pixel square PNG images', function () {
+    Storage::fake('public');
+
+    $this->actingAs(siteSettingsAdministrator())->post(route('admin.header-settings.store'), [
+        ...validHeaderSettingData(),
+        'webapp_logo' => UploadedFile::fake()->createWithContent(
+            'webapp-logo.png',
+            base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='),
+        ),
+    ])->assertSessionHasErrors('webapp_logo');
+});
+
+test('the active web app logo is exposed to installed applications', function () {
+    $header = HeaderSetting::factory()->create([
+        'site_name' => 'Visit Hinoba-an',
+        'webapp_logo_path' => 'webapp-logos/app-logo.png',
+        'status' => 'active',
+    ]);
+
+    $this->get(route('home'))
+        ->assertSuccessful()
+        ->assertSee('rel="apple-touch-icon" href="'.$header->webapp_logo_url.'"', false);
+
+    $this->get(route('webapp.manifest'))
+        ->assertSuccessful()
+        ->assertJsonPath('name', 'Visit Hinoba-an')
+        ->assertJsonPath('icons.0.src', $header->webapp_logo_url)
+        ->assertJsonPath('icons.1.purpose', 'maskable');
+});
