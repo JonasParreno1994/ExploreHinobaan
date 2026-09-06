@@ -14,6 +14,8 @@ export default function CreateHeaderSetting() {
         remove_logo: false,
         social_image: null,
         remove_social_image: false,
+        webapp_logo: null,
+        remove_webapp_logo: false,
         login_label: 'Login',
         register_label: 'Be a Partner',
         status: 'active',

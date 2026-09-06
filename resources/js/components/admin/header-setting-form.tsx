@@ -12,6 +12,8 @@ export interface HeaderSettingFormData {
     remove_logo: boolean;
     social_image: File | null;
     remove_social_image: boolean;
+    webapp_logo: File | null;
+    remove_webapp_logo: boolean;
     login_label: string;
     register_label: string;
     status: string;
@@ -23,6 +25,7 @@ interface HeaderSettingFormProps {
     onChange: <K extends keyof HeaderSettingFormData>(field: K, value: HeaderSettingFormData[K]) => void;
     currentLogoUrl?: string | null;
     currentSocialImageUrl?: string | null;
+    currentWebappLogoUrl?: string | null;
 }
 
 const textFields: { key: 'name' | 'site_name' | 'tagline' | 'login_label' | 'register_label'; label: string }[] = [
@@ -33,7 +36,7 @@ const textFields: { key: 'name' | 'site_name' | 'tagline' | 'login_label' | 'reg
     { key: 'register_label', label: 'Header partner button label' },
 ];
 
-export function HeaderSettingForm({ data, errors, onChange, currentLogoUrl, currentSocialImageUrl }: HeaderSettingFormProps) {
+export function HeaderSettingForm({ data, errors, onChange, currentLogoUrl, currentSocialImageUrl, currentWebappLogoUrl }: HeaderSettingFormProps) {
     return (
         <div className="grid gap-6">
             <div className="grid gap-5 md:grid-cols-2">
@@ -70,6 +73,35 @@ export function HeaderSettingForm({ data, errors, onChange, currentLogoUrl, curr
                     error={errors.logo}
                 />
                 <p className="text-muted-foreground text-xs">Use a square PNG, JPG, or WebP image for the best result.</p>
+            </div>
+            <div className="grid gap-2 border-t pt-6">
+                <Label>Web app logo</Label>
+                <p className="text-muted-foreground text-sm">
+                    This logo appears on the phone home screen after visitors install the website as an app.
+                </p>
+                {currentWebappLogoUrl && !data.remove_webapp_logo && !data.webapp_logo && (
+                    <div className="flex items-center gap-4 rounded-xl border bg-slate-50 p-4 dark:bg-slate-900/40">
+                        <img src={currentWebappLogoUrl} alt="Current web app logo" className="size-24 rounded-2xl bg-white object-contain" />
+                        <div className="grid gap-2">
+                            <p className="text-sm font-medium">Current web app logo</p>
+                            <Button type="button" variant="outline" size="sm" onClick={() => onChange('remove_webapp_logo', true)}>
+                                Remove logo
+                            </Button>
+                        </div>
+                    </div>
+                )}
+                <ImageUploader
+                    files={data.webapp_logo ? [data.webapp_logo] : []}
+                    onChange={(files) => {
+                        onChange('webapp_logo', files[0] ?? null);
+                        onChange('remove_webapp_logo', false);
+                    }}
+                    multiple={false}
+                    maxFiles={1}
+                    maxSizeMb={2}
+                    error={errors.webapp_logo}
+                />
+                <p className="text-muted-foreground text-xs">Required: square PNG, exactly 512 × 512 pixels, maximum 2 MB.</p>
             </div>
             <div className="grid gap-2 border-t pt-6">
                 <Label>Social media preview image</Label>

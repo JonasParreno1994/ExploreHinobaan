@@ -1,8 +1,7 @@
-const CACHE_NAME = 'explore-hinobaan-v2';
+const CACHE_NAME = 'explore-hinobaan-v3';
 const OFFLINE_URL = '/offline.html';
 const APP_SHELL = [
     OFFLINE_URL,
-    '/manifest.webmanifest',
     '/icons/icon-192.png',
     '/icons/icon-512.png',
     '/icons/icon-maskable-192.png',

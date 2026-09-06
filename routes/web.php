@@ -54,9 +54,11 @@ use App\Http\Controllers\Tourist\AuthenticatedSessionController as TouristSessio
 use App\Http\Controllers\Tourist\NotificationController as TouristNotificationController;
 use App\Http\Controllers\Tourist\RegisteredTouristController;
 use App\Http\Controllers\Tourist\VerificationController as TouristVerificationController;
+use App\Http\Controllers\WebAppManifestController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', LandingPageController::class)->name('home');
+Route::get('manifest.webmanifest', WebAppManifestController::class)->name('webapp.manifest');
 Route::get('interactive-map', InteractiveMapController::class)->name('interactive-map');
 Route::get('directions/route', DirectionsController::class)->middleware('throttle:30,1')->name('directions.route');
 
