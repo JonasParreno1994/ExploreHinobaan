@@ -9,11 +9,13 @@ use App\Models\Enterprise;
 use App\Models\EnterpriseType;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\NewPartnerActivityNotification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -32,14 +34,15 @@ class RegisteredEnterpriseController extends Controller
 
     public function store(RegisterEnterpriseRequest $request): RedirectResponse
     {
-        $storedPaths = [];
+        $storedPublicPaths = [];
+        $storedPrivatePaths = [];
 
         try {
             $logo = $request->file('logo')?->store('enterprises/logos', 'public');
             $coverImage = $request->file('cover_image')?->store('enterprises/covers', 'public');
-            $storedPaths = array_values(array_filter([$logo, $coverImage]));
+            $storedPublicPaths = array_values(array_filter([$logo, $coverImage]));
 
-            $user = DB::transaction(function () use ($request, $logo, $coverImage, &$storedPaths): User {
+            $user = DB::transaction(function () use ($request, $logo, $coverImage, &$storedPrivatePaths): User {
                 $role = Role::query()->firstOrCreate(['name' => 'Tourism Enterprise'], [
                     'description' => 'Owner or authorized representative of a registered tourism enterprise.',
                 ]);
@@ -71,8 +74,8 @@ class RegisteredEnterpriseController extends Controller
                 ]);
 
                 foreach ($request->validated('documents') as $index => $document) {
-                    $path = $request->file("documents.{$index}.file")->store('enterprise-documents', 'public');
-                    $storedPaths[] = $path;
+                    $path = $request->file("documents.{$index}.file")->store('enterprise-documents', 'local');
+                    $storedPrivatePaths[] = $path;
                     $enterprise->documents()->create([
                         'document_type' => $document['document_type'],
                         'document_number' => $document['document_number'] ?? null,
@@ -84,11 +87,21 @@ class RegisteredEnterpriseController extends Controller
                 return $user;
             });
         } catch (Throwable $exception) {
-            Storage::disk('public')->delete($storedPaths);
+            Storage::disk('public')->delete($storedPublicPaths);
+            Storage::disk('local')->delete($storedPrivatePaths);
             throw $exception;
         }
 
         event(new Registered($user));
+        $enterprise = $user->enterprises()->latest('id')->firstOrFail();
+        $reviewers = User::query()->whereHas('role', fn ($query) => $query->whereIn('name', ['Administrator', 'Tourism Staff']))->get();
+        Notification::send($reviewers, new NewPartnerActivityNotification(
+            activityType: 'enterprise_application',
+            title: 'New enterprise application',
+            message: "{$enterprise->business_name} submitted an application for Tourism Office review.",
+            reference: $enterprise->business_name,
+            url: route('admin.enterprises.show', $enterprise),
+        ));
         Auth::login($user);
 
         return to_route('partner.dashboard')->with('success', 'Your tourism enterprise application was submitted for review.');

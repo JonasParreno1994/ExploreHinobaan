@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Storage;
 
 class LocalProductOrder extends Model
 {
@@ -42,6 +41,6 @@ class LocalProductOrder extends Model
 
     protected function getPaymentProofUrlAttribute(): ?string
     {
-        return $this->payment_proof_path ? Storage::disk('public')->url($this->payment_proof_path) : null;
+        return $this->payment_proof_path ? route('secure-files.product-order-payment-proofs.show', $this) : null;
     }
 }

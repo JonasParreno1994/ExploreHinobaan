@@ -58,6 +58,17 @@ class HandleInertiaRequests extends Middleware
                         ->whereHas('enterpriseType', fn ($query) => $query->whereIn('slug', ['accommodation', 'resort', 'homestay', 'hotel', 'tour-operator']))->exists(),
                 ]
                 : null,
+            'adminNotifications' => fn (): ?array => $request->user() && ($request->routeIs('admin.*') || $request->routeIs('dashboard'))
+                ? [
+                    'unread_count' => $request->user()->unreadNotifications()->count(),
+                    'items' => $request->user()->notifications()->latest()->limit(8)->get()->map(fn ($notification): array => [
+                        'id' => $notification->id,
+                        'data' => $notification->data,
+                        'is_read' => $notification->read_at !== null,
+                        'created_at' => $notification->created_at?->diffForHumans(),
+                    ]),
+                ]
+                : null,
             'partnerNotifications' => fn (): ?array => $request->user() && $request->routeIs('partner.*')
                 ? [
                     'unread_count' => $request->user()->unreadNotifications()->count(),

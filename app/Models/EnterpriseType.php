@@ -13,7 +13,7 @@ class EnterpriseType extends Model
     /** @use HasFactory<EnterpriseTypeFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'status'];
+    protected $fillable = ['name', 'description', 'status', 'website_modules'];
 
     protected $attributes = ['status' => 'active'];
 
@@ -27,5 +27,10 @@ class EnterpriseType extends Model
     public function enterprises(): HasMany
     {
         return $this->hasMany(Enterprise::class);
+    }
+
+    protected function casts(): array
+    {
+        return ['website_modules' => 'array'];
     }
 }

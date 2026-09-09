@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Facades\Storage;
 
 class Reservation extends Model
 {
@@ -53,6 +52,6 @@ class Reservation extends Model
 
     protected function getPaymentProofUrlAttribute(): ?string
     {
-        return $this->payment_proof_path ? Storage::disk('public')->url($this->payment_proof_path) : null;
+        return $this->payment_proof_path ? route('secure-files.reservation-payment-proofs.show', $this) : null;
     }
 }

@@ -7,16 +7,21 @@ export interface EnterpriseTypeFormData {
     name: string;
     description: string;
     status: string;
+    website_modules: string[];
 }
+
+export type WebsiteModuleOption = { key: string; label: string; destination: string };
 
 export function EnterpriseTypeForm({
     data,
     errors,
     onChange,
+    websiteModules,
 }: {
     data: EnterpriseTypeFormData;
     errors: Record<string, string | undefined>;
     onChange: <K extends keyof EnterpriseTypeFormData>(field: K, value: EnterpriseTypeFormData[K]) => void;
+    websiteModules: WebsiteModuleOption[];
 }) {
     return (
         <div className="grid gap-6">
@@ -49,6 +54,25 @@ export function EnterpriseTypeForm({
                 />
                 <FormError className="mt-2" message={errors.status} />
             </div>
+            <fieldset className="grid gap-3 rounded-xl border p-4">
+                <legend className="px-2 text-sm font-semibold">Enabled Website Modules</legend>
+                <p className="text-muted-foreground text-xs">Select the CMS tools available to enterprises of this type.</p>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {websiteModules.map((module) => (
+                        <label key={module.key} className="flex items-center gap-2 rounded-lg border p-3 text-sm">
+                            <input
+                                type="checkbox"
+                                checked={data.website_modules.includes(module.key)}
+                                onChange={(event) => onChange('website_modules', event.target.checked
+                                    ? [...data.website_modules, module.key]
+                                    : data.website_modules.filter((key) => key !== module.key))}
+                            />
+                            <span>{module.label}</span>
+                        </label>
+                    ))}
+                </div>
+                <FormError message={errors.website_modules} />
+            </fieldset>
         </div>
     );
 }

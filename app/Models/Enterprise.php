@@ -61,6 +61,41 @@ class Enterprise extends Model
         return $this->hasMany(EnterpriseGalleryImage::class)->orderBy('sort_order');
     }
 
+    public function microsite(): HasOne
+    {
+        return $this->hasOne(EnterpriseWebsite::class);
+    }
+
+    public function sections(): HasMany
+    {
+        return $this->hasMany(EnterpriseSection::class)->orderBy('sort_order');
+    }
+
+    public function socialLinks(): HasMany
+    {
+        return $this->hasMany(EnterpriseSocialLink::class)->orderBy('platform');
+    }
+
+    public function menuCategories(): HasMany
+    {
+        return $this->hasMany(EnterpriseMenuCategory::class)->orderBy('sort_order');
+    }
+
+    public function menuItems(): HasMany
+    {
+        return $this->hasMany(EnterpriseMenuItem::class)->orderBy('sort_order');
+    }
+
+    public function tourPackages(): HasMany
+    {
+        return $this->hasMany(EnterpriseTourPackage::class)->latest('id');
+    }
+
+    public function guideSpecializations(): HasMany
+    {
+        return $this->hasMany(EnterpriseGuideSpecialization::class)->orderBy('name');
+    }
+
     public function reservations(): HasMany
     {
         return $this->hasMany(Reservation::class);
@@ -84,6 +119,11 @@ class Enterprise extends Model
     public function dailyTouristReports(): HasMany
     {
         return $this->hasMany(DailyTouristReport::class);
+    }
+
+    public function websiteEvents(): HasMany
+    {
+        return $this->hasMany(EnterpriseWebsiteEvent::class);
     }
 
     public function supportsArrivalReporting(): bool

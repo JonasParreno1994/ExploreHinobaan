@@ -38,3 +38,40 @@ test('users without an assigned role cannot access protected dashboards', functi
     $this->actingAs($user)->get(route('dashboard'))->assertForbidden();
     $this->actingAs($user)->get(route('partner.dashboard'))->assertForbidden();
 });
+
+test('tourism staff can manage tourism operations but not administrator-only system functions', function () {
+    $staff = userWithRole('Tourism Staff');
+
+    $this->actingAs($staff)->get(route('admin.enterprises.index'))->assertSuccessful();
+    $this->get(route('admin.tourist-verifications.index'))->assertSuccessful();
+    $this->get(route('admin.destinations.index'))->assertSuccessful();
+
+    $this->get(route('admin.users.index'))->assertForbidden();
+    $this->get(route('admin.roles.index'))->assertForbidden();
+    $this->get(route('admin.audit-logs.index'))->assertForbidden();
+    $this->get(route('admin.security-monitoring.index'))->assertForbidden();
+    $this->get(route('admin.settings'))->assertForbidden();
+    $this->get(route('admin.header-settings.create'))->assertForbidden();
+    $this->get(route('admin.footer-settings.index'))->assertForbidden();
+});
+
+test('administrators retain access to protected system functions', function () {
+    $administrator = userWithRole('Administrator');
+
+    $this->actingAs($administrator)->get(route('admin.users.index'))->assertSuccessful();
+    $this->get(route('admin.roles.index'))->assertSuccessful();
+    $this->get(route('admin.audit-logs.index'))->assertSuccessful();
+    $this->get(route('admin.security-monitoring.index'))->assertSuccessful();
+    $this->get(route('admin.settings'))->assertSuccessful();
+});
+
+test('tourism staff sidebar excludes administrator-only navigation', function () {
+    $source = file_get_contents(resource_path('js/components/admin/admin-sidebar.tsx'));
+
+    expect($source)
+        ->toContain("'/admin/users'")
+        ->toContain("'/admin/roles'")
+        ->toContain("'/admin/audit-logs'")
+        ->toContain("'/admin/security-monitoring'")
+        ->toContain("'/admin/settings'");
+});

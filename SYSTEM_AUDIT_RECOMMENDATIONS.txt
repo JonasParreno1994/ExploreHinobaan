@@ -1,0 +1,327 @@
+EXPLORE HINOBA-AN TOURISM PORTAL
+SYSTEM AUDIT AND RECOMMENDATIONS
+
+Audit result
+============
+
+The system is generally well structured. It includes public tourism content,
+enterprise onboarding, services and reservations, local products and orders,
+tourist verification, enterprise microsites, analytics, notifications, and
+security monitoring.
+
+Automated verification completed successfully:
+
+- 254 tests passed
+- 1,848 assertions passed
+
+
+HIGHEST-PRIORITY CHANGES
+========================
+
+1. Protect sensitive uploaded files
+
+Enterprise permits, reservation payment proofs, and product-order payment
+proofs currently use Laravel public storage. Anyone who discovers a storage URL
+could potentially access these files.
+
+Move these files to private storage and serve them through authorized controller
+routes:
+
+- Enterprise documents and permits
+- GCash payment receipts
+- Reservation payment proofs
+- Product-order payment proofs
+
+Tourist verification documents already use the safer private-storage pattern.
+
+
+2. Tighten Administrator and Tourism Staff permissions
+
+Most routes inside the admin group allow both Administrator and Tourism Staff.
+This appears to include sensitive functions such as user management, role
+management, account deletion, and system settings.
+
+Recommended permission matrix:
+
+- Enterprise verification: Administrator and Tourism Staff
+- Tourist verification: Administrator and Tourism Staff
+- Tourism content management: Administrator and Tourism Staff
+- User management: Administrator only
+- Role management: Administrator only
+- Security configuration: Administrator only
+- Site settings: Administrator only
+
+
+3. Improve production reliability
+
+The current local configuration uses the database for cache, sessions, and
+queues. A recent application error showed a PostgreSQL timeout while checking
+the queue/cache table. A slow database could therefore affect sessions, cache,
+notifications, queues, and page availability at the same time.
+
+Recommended production configuration:
+
+- Use Redis for cache, sessions, queues, and rate limiting
+- Run queue workers under a process supervisor
+- Configure automatic database backups
+- Add application and database monitoring
+- Set APP_DEBUG=false in production
+- Add health checks for database, queue, storage, and routing services
+
+
+4. Add throttling to Enterprise authentication
+
+Tourist login and registration are throttled, but Tourism Enterprise login and
+registration do not currently have equivalent route throttling.
+
+Add rate limits to prevent password guessing, registration spam, and repeated
+large document uploads.
+
+
+5. Investigate intermittent frontend initialization errors
+
+The browser log contains an intermittent landing-page Inertia error:
+
+Cannot read properties of null (reading 'page')
+
+Add browser tests covering direct navigation and page refresh for:
+
+- Landing page
+- Enterprise microsite
+- Local product page
+- Interactive map
+- Admin dashboard
+
+
+IMPORTANT WORKFLOW IMPROVEMENTS
+===============================
+
+6. Centralize status definitions
+
+Create PHP enums or centralized constants for:
+
+- Enterprise application status
+- Product publication status
+- Reservation status
+- Payment status
+- Verification status
+- Document status
+- Website publication status
+
+This will reduce mismatches between terms such as approved, published, active,
+and verified.
+
+
+7. Consolidate duplicated notification logic
+
+Admin, Tourism Enterprise, and Tourist notifications contain similar shared
+Inertia data, dropdown components, mark-as-read controllers, and 15-second
+polling behavior.
+
+Create a shared notification presenter/service and a reusable dropdown base
+component. Consider broadcasting or adaptive polling when usage grows.
+
+
+8. Clarify Services versus Website modules
+
+The interface should clearly communicate that:
+
+- Services & Facilities manages operational and bookable records.
+- My Website controls how those records appear publicly.
+- Rooms, activities, products, tours, and menus must have one authoritative
+  data source.
+
+Add Manage Content links from the homepage section manager to the appropriate
+source module.
+
+
+9. Improve draft and publishing behavior
+
+Add:
+
+- Last published date and publisher
+- Unpublished changes indicator
+- Draft-versus-published comparison
+- Restore previous published version
+- Confirmation before unpublishing
+- Publishing checklist for logo, cover, location, contact, and required content
+
+
+10. Improve legacy-enterprise onboarding
+
+Approved enterprises can exist without an enterprise_websites record. Add an
+idempotent migration or Artisan command that creates the CMS foundation for all
+approved enterprises without overwriting existing websites.
+
+
+COMMERCE AND RESERVATION IMPROVEMENTS
+=====================================
+
+11. Validate every seller configuration on the backend
+
+The backend should consistently:
+
+- Reject pickup when pickup is disabled
+- Reject cash-on-pickup when it is disabled
+- Enforce minimum order amounts
+- Enforce product availability
+- Prevent zero or negative stock
+- Apply preparation times
+- Enforce cancellation and refund rules
+
+
+12. Improve payment verification
+
+Add:
+
+- Payment-receipt review status
+- Reviewer and review timestamp
+- Rejection reason
+- Duplicate-reference detection
+- Audit history
+- Private receipt viewer
+
+For larger usage, consider integrating an official payment gateway.
+
+
+13. Add order and reservation lifecycle histories
+
+Create an append-only history containing:
+
+- Previous status
+- New status
+- Actor
+- Reason
+- Timestamp
+- Notification result
+
+This will improve dispute handling and Tourism Office auditing.
+
+
+14. Add database constraints for critical data
+
+Protect important rules at the database level where practical:
+
+- Nonnegative prices and stock
+- Ratings within the valid range
+- Positive quantities
+- Valid guest totals
+- End dates after start dates
+- One CMS website per enterprise
+- One order-setting record per enterprise
+
+
+15. Add or verify operational indexes
+
+Review production query plans and consider indexes for:
+
+- local_product_orders (enterprise_id, status, created_at)
+- enterprise_documents (enterprise_id, verification_status)
+- reservations (enterprise_id, status, created_at)
+- notifications (notifiable_type, notifiable_id, read_at, created_at)
+- local_products (enterprise_id, status, is_featured)
+
+
+PUBLIC WEBSITE AND USABILITY
+============================
+
+16. Create a consistent public navigation shell
+
+Use a shared public header and footer across destinations, enterprises,
+services, and local products while preserving personalized enterprise branding.
+
+
+17. Improve mobile conversion
+
+Add a mobile sticky action bar with the relevant action:
+
+- Book Now
+- Reserve
+- Order
+- Call
+- Directions
+
+Hide the action bar while a modal or installation prompt is open.
+
+
+18. Improve accessibility
+
+Review:
+
+- Keyboard navigation
+- Visible focus states
+- Form error announcements
+- Modal focus trapping
+- Image alternative text
+- Enterprise color contrast
+- Reduced-motion support
+- Map alternatives for keyboard and screen-reader users
+
+
+19. Optimize uploaded images automatically
+
+Add:
+
+- WebP or AVIF versions
+- Thumbnail generation
+- Maximum display dimensions
+- EXIF metadata removal
+- Responsive srcset images
+- Background optimization through queued jobs
+
+
+20. Strengthen SEO
+
+Add:
+
+- Canonical URLs
+- XML sitemap
+- robots.txt
+- Tourism/business structured data
+- Product structured data
+- Breadcrumb structured data
+- Social-sharing preview guidance
+- Default fallback-image validation
+
+
+ANALYTICS IMPROVEMENTS
+======================
+
+The analytics foundation already tracks profile views, clicks, conversions,
+and content views. Recommended additions:
+
+- Exclude bots and known crawlers
+- Exclude enterprise owners viewing their own websites
+- Track reservation and order conversion attribution
+- Display conversion rates, not only totals
+- Add top-referrer and device summaries
+- Define an analytics retention period
+- Aggregate older raw events
+- Provide a visitor-hashing privacy notice
+
+
+CODE-QUALITY RECOMMENDATIONS
+============================
+
+There are approximately 42 uses of TypeScript any across 21 frontend files.
+Gradually replace these with shared types for enterprises, websites, products,
+orders, reservations, notifications, and analytics.
+
+HandleInertiaRequests should also be simplified because it currently calls
+parent::share($request) twice and contains three similar notification
+serializers.
+
+
+SUGGESTED IMPLEMENTATION ORDER
+==============================
+
+1. Private storage for permits and payment proofs
+2. Administrator/Tourism Staff permission separation
+3. Production cache, session, and queue reliability
+4. Enterprise authentication throttling
+5. White-page/browser error investigation
+6. Status enums and workflow history
+7. Legacy CMS initialization
+8. Commerce validation and database constraints
+9. Image optimization and accessibility
+10. Analytics and SEO improvements

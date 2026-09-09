@@ -17,6 +17,19 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
 
+test('partner dashboard uses the shared workspace layout', function () {
+    $dashboardSource = file_get_contents(resource_path('js/pages/tourism-enterprise/dashboard.tsx'));
+    $layoutSource = file_get_contents(resource_path('js/components/tourism-enterprise/partner-layout.tsx'));
+
+    expect($dashboardSource)
+        ->toContain("import PartnerLayout from '@/components/tourism-enterprise/partner-layout'")
+        ->toContain('<PartnerLayout>')
+        ->not->toContain('<aside')
+        ->and($layoutSource)
+        ->toContain("['My Website', 'partner.websites.index', Globe2]")
+        ->toContain("aria-current={isActive ? 'page' : undefined}");
+});
+
 function partnerWithEnterprise(): array
 {
     $role = Role::factory()->create(['name' => 'Tourism Enterprise']);

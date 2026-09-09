@@ -3,6 +3,8 @@
 use App\Models\Barangay;
 use App\Models\Enterprise;
 use App\Models\EnterpriseType;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -50,6 +52,7 @@ test('tourism enterprise registration page provides active form options', functi
 
 test('a partner can submit an enterprise registration using the existing enterprise tables', function () {
     Storage::fake('public');
+    Storage::fake('local');
 
     $this->post(route('partner.register.store'), validPartnerRegistration())
         ->assertRedirect(route('partner.dashboard'));
@@ -60,11 +63,29 @@ test('a partner can submit an enterprise registration using the existing enterpr
         ->and($enterprise->user->role->name)->toBe('Tourism Enterprise')
         ->and($enterprise->documents)->toHaveCount(1)
         ->and($enterprise->documents->first()->verification_status)->toBe('pending');
-    Storage::disk('public')->assertExists($enterprise->documents->first()->file_path);
+    Storage::disk('local')->assertExists($enterprise->documents->first()->file_path);
+    Storage::disk('public')->assertMissing($enterprise->documents->first()->file_path);
     $this->assertAuthenticatedAs($enterprise->user);
 });
 
 test('enterprise registration requires a legal document and accepted declaration', function () {
     $this->post(route('partner.register.store'), validPartnerRegistration(['documents' => [], 'terms' => false]))
         ->assertInvalid(['documents', 'terms']);
+});
+
+test('new enterprise applications notify administrators in the dashboard bell', function () {
+    Storage::fake('public');
+    Storage::fake('local');
+    $role = Role::query()->firstOrCreate(['name' => 'Administrator'], ['description' => 'Administrator']);
+    $administrator = User::factory()->for($role)->create();
+
+    $this->post(route('partner.register.store'), validPartnerRegistration())->assertRedirect(route('partner.dashboard'));
+
+    $notification = $administrator->notifications()->firstOrFail();
+    expect($notification->data['activity_type'])->toBe('enterprise_application')
+        ->and($notification->data['title'])->toBe('New enterprise application');
+
+    $this->actingAs($administrator)->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+        ->where('adminNotifications.unread_count', 1)
+        ->where('adminNotifications.items.0.id', $notification->id));
 });

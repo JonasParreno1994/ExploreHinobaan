@@ -49,6 +49,21 @@ export interface SharedData {
             created_at: string;
         }[];
     } | null;
+    adminNotifications?: {
+        unread_count: number;
+        items: {
+            id: string;
+            data: {
+                activity_type: 'enterprise_application';
+                title: string;
+                message: string;
+                reference: string;
+                url: string;
+            };
+            is_read: boolean;
+            created_at: string;
+        }[];
+    } | null;
     touristNotifications?: {
         unread_count: number;
         items: {

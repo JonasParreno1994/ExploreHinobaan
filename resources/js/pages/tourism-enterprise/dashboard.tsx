@@ -1,6 +1,4 @@
-import { SiteBrand } from '@/components/site-brand';
-import { PartnerNotificationDropdown } from '@/components/tourism-enterprise/partner-notification-dropdown';
-import { Button } from '@/components/ui/button';
+import PartnerLayout from '@/components/tourism-enterprise/partner-layout';
 import { SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
@@ -12,12 +10,8 @@ import {
     Clock3,
     DollarSign,
     FileCheck2,
-    FileText,
-    LayoutDashboard,
-    LogOut,
     MapPin,
     Package,
-    ShieldCheck,
     ShoppingBag,
     Users,
 } from 'lucide-react';
@@ -105,7 +99,7 @@ export default function PartnerDashboard({
     productOrderTrend: { label: string; value: number }[];
     recentProductOrders: RecentProductOrder[];
 }) {
-    const { auth, partnerWorkspace } = usePage<SharedData>().props;
+    const { auth } = usePage<SharedData>().props;
     const activityTrend = isLocalProductProducer ? productOrderTrend : reservationTrend;
     const activityCards = isLocalProductProducer
         ? [
@@ -122,104 +116,9 @@ export default function PartnerDashboard({
           ];
 
     return (
-        <div className="min-h-screen bg-[#FFFBF5] text-[#1F2937]">
+        <PartnerLayout>
             <Head title="Tourism Enterprise Dashboard" />
-
-            <header className="sticky top-0 z-30 border-b border-orange-100 bg-white/95 shadow-sm backdrop-blur-xl">
-                <div className="mx-auto flex h-18 max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
-                    <Link href={route('partner.dashboard')} className="flex items-center gap-3">
-                        <SiteBrand subtitle="Enterprise Partner Portal" compact />
-                    </Link>
-                    <div className="flex items-center gap-2">
-                        <PartnerNotificationDropdown />
-                        <span className="hidden text-right sm:block">
-                            <strong className="block text-sm">{auth.user.name}</strong>
-                            <small className="text-[#64748B]">{isLocalProductProducer ? 'Local Product Producer' : 'Tourism Enterprise'}</small>
-                        </span>
-                        <Button variant="outline" size="sm" asChild>
-                            <Link href={route('logout')} method="post" as="button">
-                                <LogOut /> <span className="hidden sm:inline">Logout</span>
-                            </Link>
-                        </Button>
-                    </div>
-                </div>
-            </header>
-
-            <div className="mx-auto grid max-w-7xl gap-8 px-5 py-8 sm:px-8 lg:grid-cols-[240px_1fr] lg:py-10">
-                <aside className="hidden lg:block">
-                    <div className="sticky top-28 rounded-3xl border border-orange-100 bg-white p-4 shadow-sm">
-                        <p className="px-3 pb-3 text-[10px] font-bold tracking-[.18em] text-[#64748B] uppercase">Partner workspace</p>
-                        <div className="flex items-center gap-3 rounded-2xl bg-[#0F766E] px-4 py-3 font-bold text-white">
-                            <LayoutDashboard className="size-5" /> Dashboard
-                        </div>
-                        <Link
-                            href={route('partner.enterprises.index')}
-                            className="mt-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[#64748B] transition hover:bg-[#FFF3E6] hover:text-[#F97316]"
-                        >
-                            <Building2 className="size-5 text-[#F97316]" /> My enterprises
-                        </Link>
-                        <Link
-                            href={route('partner.documents.index')}
-                            className="mt-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[#64748B] transition hover:bg-[#FFF3E6] hover:text-[#F97316]"
-                        >
-                            <FileText className="size-5 text-[#F97316]" /> Documents
-                        </Link>
-                        {!isLocalProductProducer && (
-                            <>
-                                <Link
-                                    href={route('partner.services.index')}
-                                    className="mt-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[#64748B] transition hover:bg-[#FFF3E6] hover:text-[#F97316]"
-                                >
-                                    <Building2 className="size-5 text-[#F97316]" /> Services & Facilities
-                                </Link>
-                                <Link
-                                    href={route('partner.reservations.index')}
-                                    className="mt-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[#64748B] transition hover:bg-[#FFF3E6] hover:text-[#F97316]"
-                                >
-                                    <CalendarDays className="size-5 text-[#F97316]" /> Reservations
-                                </Link>
-                            </>
-                        )}
-                        {partnerWorkspace?.can_report_arrivals && (
-                            <>
-                                <Link
-                                    href={route('partner.tourist-arrivals.index')}
-                                    className="mt-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[#64748B] transition hover:bg-[#FFF3E6] hover:text-[#F97316]"
-                                >
-                                    <Users className="size-5 text-[#F97316]" /> Tourist Arrivals
-                                </Link>
-                                <Link
-                                    href={route('partner.daily-reports.index')}
-                                    className="mt-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[#64748B] transition hover:bg-[#FFF3E6] hover:text-[#F97316]"
-                                >
-                                    <CalendarCheck2 className="size-5 text-[#F97316]" /> Daily Tourist Reports
-                                </Link>
-                            </>
-                        )}
-                        {isLocalProductProducer && (
-                            <>
-                                <Link
-                                    href={route('partner.products.index')}
-                                    className="mt-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[#64748B] transition hover:bg-[#FFF3E6] hover:text-[#F97316]"
-                                >
-                                    <Package className="size-5 text-[#F97316]" /> Local Products
-                                </Link>
-                                <Link
-                                    href={route('partner.product-orders.index')}
-                                    className="mt-2 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[#64748B] transition hover:bg-[#FFF3E6] hover:text-[#F97316]"
-                                >
-                                    <ShoppingBag className="size-5 text-[#F97316]" /> Product Orders
-                                </Link>
-                            </>
-                        )}
-                        <div className="mt-5 rounded-2xl bg-[#FFF3E6] p-4 text-xs leading-5 text-[#64748B]">
-                            <ShieldCheck className="mb-2 size-5 text-[#0F766E]" /> Your listings are reviewed by the Hinoba-an Tourism Office before
-                            public publication.
-                        </div>
-                    </div>
-                </aside>
-
-                <main className="min-w-0">
+            <div>
                     <section className="overflow-hidden rounded-3xl bg-[#0F766E] p-7 text-white shadow-xl sm:p-9">
                         <p className="text-xs font-bold tracking-[.18em] text-[#FBBF24] uppercase">
                             {isLocalProductProducer ? 'Local product producer dashboard' : 'Tourism enterprise dashboard'}
@@ -435,8 +334,7 @@ export default function PartnerDashboard({
                             })
                         )}
                     </section>
-                </main>
             </div>
-        </div>
+        </PartnerLayout>
     );
 }
