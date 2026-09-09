@@ -6,7 +6,6 @@ use Database\Factories\EnterpriseDocumentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 
 class EnterpriseDocument extends Model
 {
@@ -31,6 +30,6 @@ class EnterpriseDocument extends Model
 
     protected function getFileUrlAttribute(): string
     {
-        return Storage::disk('public')->url($this->file_path);
+        return route('secure-files.enterprise-documents.show', $this);
     }
 }

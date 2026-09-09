@@ -98,12 +98,16 @@ const navigationSections: NavigationSection[] = [
 export function AdminSidebar() {
     const { auth } = usePage<SharedData>().props;
     const isAdministrator = auth.user.role?.name === 'Administrator';
-    const visibleSections = navigationSections.map((section) => ({
-        ...section,
-        items: section.items.filter(
-            (item) => !['/admin/settings', '/admin/security-monitoring'].includes(item.href) || isAdministrator,
-        ),
-    }));
+    const visibleSections = navigationSections
+        .map((section) => ({
+            ...section,
+            items: section.items.filter(
+                (item) =>
+                    !['/admin/users', '/admin/roles', '/admin/audit-logs', '/admin/security-monitoring', '/admin/settings'].includes(item.href) ||
+                    isAdministrator,
+            ),
+        }))
+        .filter((section) => section.items.length > 0);
 
     return (
         <Sidebar collapsible="icon" className="border-emerald-950/10" variant="sidebar">

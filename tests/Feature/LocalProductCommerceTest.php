@@ -73,6 +73,18 @@ test('administrator can publish a product and it becomes publicly visible', func
     $this->get(route('local-products.show', $product))->assertSuccessful()->assertInertia(fn (Assert $page) => $page->component('local-products/show')->where('product.name', 'Local Coffee'));
 });
 
+test('public product order page uses the structured responsive checkout form', function () {
+    $source = file_get_contents(resource_path('js/pages/local-products/show.tsx'));
+
+    expect($source)
+        ->toContain('Order details')
+        ->toContain('Customer information')
+        ->toContain('Fulfillment and payment')
+        ->toContain('Order notes')
+        ->toContain('lg:grid-cols-[minmax(0,1.25fr)_minmax(340px,.75fr)]')
+        ->toContain("toLocaleString('en-PH')");
+});
+
 test('tourist order total and inventory are recalculated by the backend', function () {
     [$owner, $enterprise, $category] = localProductContext();
     Notification::fake();

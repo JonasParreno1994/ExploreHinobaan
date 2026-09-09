@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Services\EnterpriseWebsiteModuleRegistry;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,6 +27,8 @@ class UpdateEnterpriseTypeRequest extends FormRequest
             'name' => ['required', 'string', 'max:255', Rule::unique('enterprise_types')->ignore($this->route('enterprise_type'))],
             'description' => ['nullable', 'string', 'max:5000'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
+            'website_modules' => ['sometimes', 'array'],
+            'website_modules.*' => ['string', Rule::in(collect(app(EnterpriseWebsiteModuleRegistry::class)->catalog())->pluck('key')->all())],
         ];
     }
 }

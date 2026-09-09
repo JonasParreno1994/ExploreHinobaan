@@ -1,157 +1,166 @@
-import { BackToLanding } from '@/components/back-to-landing';
-import DestinationMap from '@/components/landing/destination-map';
-import { ReviewSection, type PublicReview, type ReviewSummary } from '@/components/reviews/review-section';
+import { EnterpriseFooter } from '@/components/enterprise-microsite/enterprise-footer';
+import { EnterpriseGallery } from '@/components/enterprise-microsite/enterprise-gallery';
+import { EnterpriseHero } from '@/components/enterprise-microsite/enterprise-hero';
+import { EnterpriseNavigation } from '@/components/enterprise-microsite/enterprise-navigation';
+import {
+    AccommodationSection,
+    EnterpriseAbout,
+    EnterpriseAmenities,
+    EnterpriseContact,
+    EnterpriseCTA,
+    EnterpriseMap,
+    EnterprisePolicies,
+    EnterpriseReviews,
+    EnterpriseServices,
+    GuideProfileSection,
+    MenuSection,
+    ProductSection,
+    RecreationSection,
+    SpecializedContentSections,
+    TourPackagesSection,
+} from '@/components/enterprise-microsite/enterprise-sections';
+import { EnterpriseMicrositeData, isAccommodation, sectionOf } from '@/components/enterprise-microsite/types';
+import { type PublicReview, type ReviewSummary } from '@/components/reviews/review-section';
 import { SiteBrand } from '@/components/site-brand';
 import { Head, Link } from '@inertiajs/react';
-import { CheckCircle2, Globe, Mail, MapPin, Phone } from 'lucide-react';
-interface Service {
-    id: number;
-    slug: string;
-    name: string;
-    short_description: string | null;
-    price: string;
-    pricing_unit: string;
-    capacity: number | null;
-    quantity: number;
-    amenities: string[] | null;
-    main_image_url: string | null;
-    reservation_required: boolean;
-    service_type: { name: string } | null;
-}
-interface Enterprise {
-    id: number;
-    slug: string;
-    business_name: string;
-    description: string | null;
-    address: string;
-    phone: string | null;
-    email: string | null;
-    website: string | null;
-    latitude: string | null;
-    longitude: string | null;
-    cover_image_url: string | null;
-    logo_url: string | null;
-    enterprise_type: { name: string };
-    barangay: { name: string } | null;
-    services: Service[];
-    gallery_images: { id: number; image_url: string; caption: string | null }[];
-}
-export default function Show({ enterprise: e, reviews, reviewSummary }: { enterprise: Enterprise; reviews: PublicReview[]; reviewSummary: ReviewSummary }) {
+import { ArrowLeft } from 'lucide-react';
+import { CSSProperties, Fragment, ReactNode, useEffect } from 'react';
+
+const templateBackgrounds: Record<string, string> = {
+    tropical: 'bg-[#FFFBF5]',
+    coastal: 'bg-sky-50',
+    modern: 'bg-slate-50',
+    elegant: 'bg-stone-50',
+    nature: 'bg-emerald-50',
+    minimal: 'bg-white',
+    local_heritage: 'bg-amber-50',
+};
+
+export default function Show({
+    enterprise,
+    reviews,
+    reviewSummary,
+    isPreview = false,
+}: {
+    enterprise: EnterpriseMicrositeData;
+    reviews: PublicReview[];
+    reviewSummary: ReviewSummary;
+    isPreview?: boolean;
+}) {
+    const microsite = enterprise.microsite;
+    const socialTitle = microsite?.social_title || microsite?.seo_title || enterprise.business_name;
+    const socialDescription = microsite?.social_description || microsite?.seo_description || microsite?.tagline || enterprise.description;
+    const type = enterprise.enterprise_type.name;
+    const colors = {
+        '--microsite-primary': microsite?.primary_color ?? '#0F766E',
+        '--microsite-secondary': microsite?.secondary_color ?? '#F97316',
+        '--microsite-accent': microsite?.accent_color ?? '#FBBF24',
+    } as CSSProperties;
+    const serviceSection = isAccommodation(type) ? <AccommodationSection enterprise={enterprise} /> : type === 'Recreation Provider' ? <RecreationSection enterprise={enterprise} /> : <EnterpriseServices enterprise={enterprise} />;
+    const sectionComponents: Record<string, ReactNode> = {
+        about: <EnterpriseAbout enterprise={enterprise} />, menu: <MenuSection enterprise={enterprise} />,
+        rooms: serviceSection, activities: serviceSection, featured_services: serviceSection,
+        amenities: <EnterpriseAmenities enterprise={enterprise} />, products: <ProductSection enterprise={enterprise} />,
+        tour_packages: <><TourPackagesSection enterprise={enterprise} /><GuideProfileSection enterprise={enterprise} /></>,
+        gallery: <EnterpriseGallery enterprise={enterprise} />, location: <EnterpriseMap enterprise={enterprise} />,
+        contact: <EnterpriseContact enterprise={enterprise} />, reviews: <EnterpriseReviews enterprise={enterprise} reviews={reviews} summary={reviewSummary} />,
+    };
+    const specializedKey = type === 'Local Product Seller' ? 'products'
+        : type === 'Recreation Provider' ? 'activities'
+        : isAccommodation(type) ? 'rooms'
+        : ['Tour Guide', 'Tour Operator'].includes(type) ? 'tour_packages'
+        : ['Cafe', 'Restaurant'].includes(type) ? 'menu'
+        : 'featured_services';
+    const defaultHomepageBlocks = ['about', specializedKey, 'amenities', 'gallery', 'location', 'contact', 'reviews']
+        .map((key) => ({ key, node: sectionComponents[key] }))
+        .filter((block) => block.node);
+    const builderSections = enterprise.sections.filter((section) => section.section_type.startsWith('builder_'));
+    const heroSection = builderSections.find((section) => section.section_type === 'builder_hero');
+    const homepageBlocks = builderSections.length > 0
+        ? builderSections.filter((section) => section.section_type !== 'builder_hero' && section.is_visible !== false).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)).map((section) => ({ key: section.section_type, node: sectionComponents[section.section_type.replace('builder_', '')] })).filter((block) => block.node)
+        : defaultHomepageBlocks;
+    useEffect(() => {
+        if (isPreview) return;
+        const send = (payload: Record<string, unknown>) => {
+            const token = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+            void fetch(route('enterprises.website-events.store', enterprise.slug), {
+                method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token ?? '' },
+                body: JSON.stringify(payload),
+            });
+        };
+        const track = (event: MouseEvent) => {
+            const anchor = (event.target as HTMLElement).closest('a');
+            if (!anchor) return;
+            const href = anchor.href;
+            const text = anchor.textContent?.trim() ?? '';
+            const eventType = href.includes('google.com/maps') ? 'direction_click'
+                : href.startsWith('mailto:') || href.startsWith('tel:') ? 'contact_click'
+                : enterprise.social_links.some((link) => href === link.url) ? 'social_click'
+                : /reserve|book|order/i.test(text) ? 'reservation_click'
+                : href.includes('/services/') ? 'content_view' : null;
+            if (!eventType) return;
+            send({ event_type: eventType, target_type: eventType === 'social_click' ? 'social' : undefined, target_label: text });
+        };
+        const viewed = new Set<Element>();
+        const observer = new IntersectionObserver((entries) => entries.forEach((entry) => {
+            if (!entry.isIntersecting || viewed.has(entry.target)) return;
+            viewed.add(entry.target);
+            const element = entry.target as HTMLElement;
+            send({ event_type: 'content_view', target_type: element.dataset.analyticsContent, target_id: Number(element.dataset.analyticsId), target_label: element.dataset.analyticsLabel });
+        }), { threshold: 0.6 });
+        document.querySelectorAll('[data-analytics-content]').forEach((element) => observer.observe(element));
+        document.addEventListener('click', track);
+        return () => { document.removeEventListener('click', track); observer.disconnect(); };
+    }, [enterprise.slug, enterprise.social_links, isPreview]);
     return (
-        <div className="min-h-screen bg-[#FFFBF5] text-[#1F2937]">
-            <Head title={e.business_name} />
-            <header className="border-b bg-white">
-                <div className="mx-auto flex h-18 max-w-7xl items-center justify-between gap-4 px-5">
-                    <Link href={route('home')} className="flex items-center gap-2 font-bold">
-                        <SiteBrand compact />
+        <div
+            className={`min-h-screen scroll-smooth text-slate-900 ${templateBackgrounds[microsite?.template ?? 'tropical']}`}
+            style={colors}
+            data-template={microsite?.template ?? 'tropical'}
+        >
+            <Head title={microsite?.seo_title || enterprise.business_name}>
+                {microsite?.seo_description && <meta head-key="description" name="description" content={microsite.seo_description} />}
+                <meta head-key="og:type" property="og:type" content="website" />
+                <meta head-key="og:title" property="og:title" content={socialTitle} />
+                {socialDescription && <meta head-key="og:description" property="og:description" content={socialDescription} />}
+                <meta head-key="og:url" property="og:url" content={route('enterprises.show', enterprise.slug)} />
+                {microsite?.social_image_url && <meta head-key="og:image" property="og:image" content={microsite.social_image_url} />}
+                <meta head-key="twitter:card" name="twitter:card" content="summary_large_image" />
+                <meta head-key="twitter:title" name="twitter:title" content={socialTitle} />
+                {socialDescription && <meta head-key="twitter:description" name="twitter:description" content={socialDescription} />}
+                {microsite?.social_image_url && <meta head-key="twitter:image" name="twitter:image" content={microsite.social_image_url} />}
+            </Head>
+            {isPreview && (
+                <div className="bg-amber-300 px-4 py-2 text-center text-sm font-black text-amber-950">
+                    Preview mode · Draft changes are visible only to you
+                </div>
+            )}
+            <header className="absolute inset-x-0 z-30 border-b border-white/15 text-white">
+                <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
+                    <Link
+                        href={route('home')}
+                        aria-label="Explore Hinoba-an home"
+                        className="rounded-2xl bg-white/90 px-3 py-2 text-slate-900 shadow-sm backdrop-blur"
+                    >
+                        <SiteBrand subtitle="Official Tourism Portal" compact />
                     </Link>
-                    <BackToLanding compact />
+                    <Link
+                        href={route('enterprises.index')}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/10 px-4 py-2 text-sm font-bold backdrop-blur"
+                    >
+                        <ArrowLeft className="size-4" /> Explore Hinoba-an
+                    </Link>
                 </div>
             </header>
-            <section className="relative h-[430px] overflow-hidden">
-                <img src={e.cover_image_url ?? '/images/landing/hinobaan-hero.png'} alt={e.business_name} className="size-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/10" />
-                <div className="absolute inset-x-0 bottom-0 mx-auto flex max-w-7xl items-end gap-5 px-5 pb-10 text-white">
-                    {e.logo_url && <img src={e.logo_url} alt="" className="size-24 rounded-2xl border-4 border-white bg-white object-cover" />}
-                    <div>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-[#0F766E] px-3 py-1 text-xs font-bold">
-                            <CheckCircle2 className="size-4" />
-                            Verified {e.enterprise_type.name}
-                        </span>
-                        <h1 className="mt-3 text-4xl font-extrabold sm:text-5xl">{e.business_name}</h1>
-                        <p className="mt-2 flex gap-2">
-                            <MapPin />
-                            Brgy. {e.barangay?.name ?? 'Hinoba-an'}, Hinoba-an
-                        </p>
-                    </div>
-                </div>
-            </section>
-            <main className="mx-auto max-w-7xl space-y-16 px-5 py-14">
-                <section>
-                    <h2 className="text-3xl font-extrabold">About the Enterprise</h2>
-                    <p className="mt-5 max-w-4xl leading-8 whitespace-pre-line text-[#64748B]">
-                        {e.description || 'More information will be available soon.'}
-                    </p>
-                </section>
-                <section>
-                    <h2 className="text-3xl font-extrabold">Services & Facilities</h2>
-                    <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {e.services.map((s) => (
-                            <article key={s.id} className="overflow-hidden rounded-3xl bg-white shadow-sm">
-                                <img
-                                    src={s.main_image_url ?? e.cover_image_url ?? '/images/landing/hinobaan-hero.png'}
-                                    alt={s.name}
-                                    className="h-44 w-full object-cover"
-                                />
-                                <div className="p-5">
-                                    <span className="text-xs font-bold text-[#0F766E]">{s.service_type?.name}</span>
-                                    <h3 className="mt-1 text-xl font-bold">{s.name}</h3>
-                                    <p className="mt-2 line-clamp-2 text-sm text-[#64748B]">{s.short_description}</p>
-                                    <p className="mt-4 text-lg font-extrabold text-[#F97316]">
-                                        ₱{Number(s.price).toLocaleString('en-PH')} / {s.pricing_unit.replace('per_', '')}
-                                    </p>
-                                    <p className="mt-1 text-xs text-[#64748B]">
-                                        {s.quantity} available{s.capacity ? ` · Up to ${s.capacity} guests` : ''}
-                                    </p>
-                                    <Link
-                                        href={route('enterprises.services.show', [e.slug, s.slug])}
-                                        className="mt-4 inline-flex rounded-xl bg-[#F97316] px-4 py-2.5 text-sm font-bold text-white"
-                                    >
-                                        View Details{s.reservation_required ? ' & Reserve' : ''}
-                                    </Link>
-                                </div>
-                            </article>
-                        ))}
-                    </div>
-                    {e.services.length === 0 && <p className="mt-5 text-[#64748B]">No published services are available yet.</p>}
-                </section>
-                <section>
-                    <h2 className="mb-6 text-3xl font-extrabold">Location</h2>
-                    <DestinationMap name={e.business_name} address={e.address} latitude={e.latitude} longitude={e.longitude} />
-                </section>
-                {e.gallery_images.length > 0 && (
-                    <section>
-                        <h2 className="text-3xl font-extrabold">Photo Gallery</h2>
-                        <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-                            {e.gallery_images.map((i) => (
-                                <img
-                                    key={i.id}
-                                    src={i.image_url}
-                                    alt={i.caption ?? e.business_name}
-                                    className="aspect-square w-full rounded-2xl object-cover"
-                                />
-                            ))}
-                        </div>
-                    </section>
-                )}
-                <section className="rounded-3xl bg-[#0F766E] p-8 text-white">
-                    <h2 className="text-2xl font-extrabold">Contact Information</h2>
-                    <div className="mt-5 grid gap-4 sm:grid-cols-3">
-                        <Contact icon={Phone} label="Phone" value={e.phone} href={e.phone ? `tel:${e.phone}` : undefined} />
-                        <Contact icon={Mail} label="Email" value={e.email} href={e.email ? `mailto:${e.email}` : undefined} />
-                        <Contact icon={Globe} label="Website" value={e.website} href={e.website ?? undefined} />
-                    </div>
-                </section>
-                <ReviewSection targetType="enterprise" targetId={e.id} reviews={reviews} summary={reviewSummary} />
+            {heroSection?.is_visible !== false && <EnterpriseHero enterprise={enterprise} />}
+            <EnterpriseNavigation enterprise={enterprise} />
+            <main className="mx-auto max-w-7xl px-5 sm:px-8">
+                {homepageBlocks.map((block) => <Fragment key={block.key}>{block.node}</Fragment>)}
+                <EnterprisePolicies section={sectionOf(enterprise, 'policies')} />
+                <SpecializedContentSections enterprise={enterprise} />
+                <EnterpriseCTA enterprise={enterprise} />
             </main>
+            <EnterpriseFooter enterprise={enterprise} />
         </div>
-    );
-}
-function Contact({ icon: Icon, label, value, href }: { icon: typeof Phone; label: string; value: string | null; href?: string }) {
-    const body = (
-        <>
-            <Icon className="size-5 text-[#FBBF24]" />
-            <span>
-                <small className="block text-teal-100">{label}</small>
-                {value || 'Not available'}
-            </span>
-        </>
-    );
-    return href ? (
-        <a href={href} target={label === 'Website' ? '_blank' : undefined} rel="noreferrer" className="flex gap-3">
-            {body}
-        </a>
-    ) : (
-        <div className="flex gap-3">{body}</div>
     );
 }

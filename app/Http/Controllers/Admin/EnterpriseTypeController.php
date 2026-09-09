@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreEnterpriseTypeRequest;
 use App\Http\Requests\Admin\UpdateEnterpriseTypeRequest;
 use App\Models\EnterpriseType;
+use App\Services\EnterpriseWebsiteModuleRegistry;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,9 +38,9 @@ class EnterpriseTypeController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create(): Response
+    public function create(EnterpriseWebsiteModuleRegistry $modules): Response
     {
-        return Inertia::render('admin/enterprise-types/create');
+        return Inertia::render('admin/enterprise-types/create', ['websiteModules' => $modules->catalog()]);
     }
 
     /**
@@ -55,9 +56,11 @@ class EnterpriseTypeController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(EnterpriseType $enterpriseType): Response
+    public function edit(EnterpriseType $enterpriseType, EnterpriseWebsiteModuleRegistry $modules): Response
     {
-        return Inertia::render('admin/enterprise-types/edit', ['enterpriseType' => $enterpriseType]);
+        $enterpriseType->website_modules ??= $modules->defaultsForType($enterpriseType->name);
+
+        return Inertia::render('admin/enterprise-types/edit', ['enterpriseType' => $enterpriseType, 'websiteModules' => $modules->catalog()]);
     }
 
     /**

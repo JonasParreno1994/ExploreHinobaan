@@ -31,7 +31,7 @@ class LocalProductOrderController extends Controller
             abort_if($data['payment_method'] === 'gcash' && ! $settings->accepts_gcash, 422);
             $subtotal = round((float) $product->price * $data['quantity'], 2);
             $deliveryFee = $data['fulfillment_method'] === 'delivery' ? (float) $settings->delivery_fee : 0;
-            $proof = $request->file('payment_proof')?->store('local-product-orders/payment-proofs', 'public');
+            $proof = $request->file('payment_proof')?->store('local-product-orders/payment-proofs', 'local');
             $order = LocalProductOrder::create(['order_number' => 'HIN-PROD-'.now()->format('Y').'-'.Str::upper(Str::random(8)), 'enterprise_id' => $product->enterprise_id, 'customer_id' => $request->user()?->id, 'customer_name' => $data['customer_name'], 'customer_email' => $data['customer_email'], 'customer_contact' => $data['customer_contact'], 'fulfillment_method' => $data['fulfillment_method'], 'delivery_address' => $data['delivery_address'] ?? null, 'subtotal' => $subtotal, 'delivery_fee' => $deliveryFee, 'total_amount' => $subtotal + $deliveryFee, 'payment_method' => $data['payment_method'], 'payment_status' => $proof ? 'pending_verification' : 'unpaid', 'payment_proof_path' => $proof, 'customer_notes' => $data['customer_notes'] ?? null]);
             $order->items()->create(['local_product_id' => $product->id, 'product_name' => $product->name, 'quantity' => $data['quantity'], 'unit' => $product->selling_unit, 'unit_price' => $product->price, 'subtotal' => $subtotal]);
             if (! $product->is_made_to_order) {

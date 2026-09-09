@@ -13,7 +13,9 @@ class EnterpriseGalleryImage extends Model
     /** @use HasFactory<EnterpriseGalleryImageFactory> */
     use HasFactory;
 
-    protected $fillable = ['enterprise_id', 'image_path', 'caption', 'sort_order'];
+    protected $fillable = ['enterprise_id', 'image_path', 'caption', 'sort_order', 'is_featured'];
+
+    protected $attributes = ['sort_order' => 0, 'is_featured' => false];
 
     protected $appends = ['image_url'];
 
@@ -25,5 +27,10 @@ class EnterpriseGalleryImage extends Model
     protected function getImageUrlAttribute(): string
     {
         return Storage::disk('public')->url($this->image_path);
+    }
+
+    protected function casts(): array
+    {
+        return ['sort_order' => 'integer', 'is_featured' => 'boolean'];
     }
 }

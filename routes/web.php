@@ -9,12 +9,14 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\DestinationController;
 use App\Http\Controllers\Admin\EnterpriseController;
 use App\Http\Controllers\Admin\EnterpriseTypeController;
+use App\Http\Controllers\Admin\EnterpriseWebsiteAnalyticsController as AdminEnterpriseWebsiteAnalyticsController;
 use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\FooterSettingController;
 use App\Http\Controllers\Admin\GalleryController;
 use App\Http\Controllers\Admin\HeaderSettingController;
 use App\Http\Controllers\Admin\LguInformationController;
 use App\Http\Controllers\Admin\LocalProductController as AdminLocalProductController;
+use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SecurityIncidentController;
@@ -30,6 +32,7 @@ use App\Http\Controllers\DestinationController as PublicDestinationController;
 use App\Http\Controllers\DirectionsController;
 use App\Http\Controllers\EnterpriseController as PublicEnterpriseController;
 use App\Http\Controllers\EnterpriseServiceController as PublicEnterpriseServiceController;
+use App\Http\Controllers\EnterpriseWebsiteEventController;
 use App\Http\Controllers\InteractiveMapController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\LocalProductController as PublicLocalProductController;
@@ -37,12 +40,23 @@ use App\Http\Controllers\LocalProductOrderController as PublicLocalProductOrderC
 use App\Http\Controllers\ReservationController as PublicReservationController;
 use App\Http\Controllers\ReservationStatusController;
 use App\Http\Controllers\ReviewController as PublicReviewController;
+use App\Http\Controllers\SensitiveFileController;
 use App\Http\Controllers\TourismEnterprise\AuthenticatedSessionController as PartnerSessionController;
 use App\Http\Controllers\TourismEnterprise\DailyTouristReportController as PartnerDailyTouristReportController;
 use App\Http\Controllers\TourismEnterprise\DashboardController as PartnerDashboardController;
 use App\Http\Controllers\TourismEnterprise\EnterpriseDocumentController as PartnerDocumentController;
 use App\Http\Controllers\TourismEnterprise\EnterpriseProfileController as PartnerEnterpriseController;
 use App\Http\Controllers\TourismEnterprise\EnterpriseServiceController as PartnerServiceController;
+use App\Http\Controllers\TourismEnterprise\EnterpriseWebsiteAnalyticsController as PartnerWebsiteAnalyticsController;
+use App\Http\Controllers\TourismEnterprise\EnterpriseWebsiteContactController as PartnerWebsiteContactController;
+use App\Http\Controllers\TourismEnterprise\EnterpriseWebsiteController as PartnerWebsiteController;
+use App\Http\Controllers\TourismEnterprise\EnterpriseWebsiteGalleryController as PartnerWebsiteGalleryController;
+use App\Http\Controllers\TourismEnterprise\EnterpriseWebsiteGuideController as PartnerWebsiteGuideController;
+use App\Http\Controllers\TourismEnterprise\EnterpriseWebsiteHomeController as PartnerWebsiteHomeController;
+use App\Http\Controllers\TourismEnterprise\EnterpriseWebsiteLocationController as PartnerWebsiteLocationController;
+use App\Http\Controllers\TourismEnterprise\EnterpriseWebsiteMenuController as PartnerWebsiteMenuController;
+use App\Http\Controllers\TourismEnterprise\EnterpriseWebsiteSectionController as PartnerWebsiteSectionController;
+use App\Http\Controllers\TourismEnterprise\EnterpriseWebsiteTourController as PartnerWebsiteTourController;
 use App\Http\Controllers\TourismEnterprise\LocalProductController as PartnerLocalProductController;
 use App\Http\Controllers\TourismEnterprise\LocalProductOrderController as PartnerLocalProductOrderController;
 use App\Http\Controllers\TourismEnterprise\NotificationController as PartnerNotificationController;
@@ -61,6 +75,12 @@ Route::get('/', LandingPageController::class)->name('home');
 Route::get('manifest.webmanifest', WebAppManifestController::class)->name('webapp.manifest');
 Route::get('interactive-map', InteractiveMapController::class)->name('interactive-map');
 Route::get('directions/route', DirectionsController::class)->middleware('throttle:30,1')->name('directions.route');
+
+Route::middleware('auth')->prefix('secure-files')->name('secure-files.')->group(function () {
+    Route::get('enterprise-documents/{enterpriseDocument}', [SensitiveFileController::class, 'enterpriseDocument'])->name('enterprise-documents.show');
+    Route::get('reservation-payment-proofs/{reservation}', [SensitiveFileController::class, 'reservationPaymentProof'])->name('reservation-payment-proofs.show');
+    Route::get('product-order-payment-proofs/{localProductOrder}', [SensitiveFileController::class, 'productOrderPaymentProof'])->name('product-order-payment-proofs.show');
+});
 
 Route::middleware('guest')->prefix('tourist')->name('tourist.')->group(function () {
     Route::get('login', [TouristSessionController::class, 'create'])->name('login');
@@ -93,6 +113,43 @@ Route::middleware(['auth', 'role:Tourism Enterprise'])->prefix('tourism-enterpri
     Route::get('enterprises', [PartnerEnterpriseController::class, 'index'])->name('enterprises.index');
     Route::post('enterprises/{enterprise}/payment-settings', [PartnerEnterpriseController::class, 'updatePaymentSettings'])->name('enterprises.payment-settings');
     Route::post('enterprises/{enterprise}/commerce-settings', [PartnerEnterpriseController::class, 'updateCommerceSettings'])->name('enterprises.commerce-settings');
+    Route::prefix('websites')->name('websites.')->group(function () {
+        Route::get('/', [PartnerWebsiteController::class, 'index'])->name('index');
+        Route::get('{enterprise}', [PartnerWebsiteController::class, 'dashboard'])->name('dashboard');
+        Route::get('{enterprise}/appearance', [PartnerWebsiteController::class, 'appearance'])->name('appearance');
+        Route::get('{enterprise}/home', [PartnerWebsiteHomeController::class, 'edit'])->name('home');
+        Route::put('{enterprise}/home', [PartnerWebsiteHomeController::class, 'update'])->name('home.update');
+        Route::put('{enterprise}/appearance', [PartnerWebsiteController::class, 'updateAppearance'])->name('appearance.update');
+        Route::get('{enterprise}/sections/{section}', [PartnerWebsiteSectionController::class, 'edit'])->name('sections.edit');
+        Route::put('{enterprise}/sections/{section}', [PartnerWebsiteSectionController::class, 'update'])->name('sections.update');
+        Route::get('{enterprise}/gallery', [PartnerWebsiteGalleryController::class, 'index'])->name('gallery');
+        Route::post('{enterprise}/gallery', [PartnerWebsiteGalleryController::class, 'store'])->name('gallery.store');
+        Route::delete('{enterprise}/gallery/{image}', [PartnerWebsiteGalleryController::class, 'destroy'])->name('gallery.destroy');
+        Route::patch('{enterprise}/gallery/reorder', [PartnerWebsiteGalleryController::class, 'reorder'])->name('gallery.reorder');
+        Route::patch('{enterprise}/gallery/{image}/featured', [PartnerWebsiteGalleryController::class, 'feature'])->name('gallery.feature');
+        Route::patch('{enterprise}/gallery/{image}/cover', [PartnerWebsiteGalleryController::class, 'cover'])->name('gallery.cover');
+        Route::get('{enterprise}/location', [PartnerWebsiteLocationController::class, 'edit'])->name('location');
+        Route::put('{enterprise}/location', [PartnerWebsiteLocationController::class, 'update'])->name('location.update');
+        Route::get('{enterprise}/contact', [PartnerWebsiteContactController::class, 'edit'])->name('contact');
+        Route::put('{enterprise}/contact', [PartnerWebsiteContactController::class, 'update'])->name('contact.update');
+        Route::get('{enterprise}/seo', [PartnerWebsiteController::class, 'seo'])->name('seo');
+        Route::get('{enterprise}/analytics', PartnerWebsiteAnalyticsController::class)->name('analytics');
+        Route::put('{enterprise}/seo', [PartnerWebsiteController::class, 'updateSeo'])->name('seo.update');
+        Route::get('{enterprise}/menu', [PartnerWebsiteMenuController::class, 'index'])->name('menu');
+        Route::post('{enterprise}/menu/categories', [PartnerWebsiteMenuController::class, 'storeCategory'])->name('menu.categories.store');
+        Route::delete('{enterprise}/menu/categories/{category}', [PartnerWebsiteMenuController::class, 'destroyCategory'])->name('menu.categories.destroy');
+        Route::post('{enterprise}/menu/items', [PartnerWebsiteMenuController::class, 'storeItem'])->name('menu.items.store');
+        Route::delete('{enterprise}/menu/items/{item}', [PartnerWebsiteMenuController::class, 'destroyItem'])->name('menu.items.destroy');
+        Route::get('{enterprise}/tours', [PartnerWebsiteTourController::class, 'index'])->name('tours');
+        Route::post('{enterprise}/tours/packages', [PartnerWebsiteTourController::class, 'storePackage'])->name('tours.packages.store');
+        Route::post('{enterprise}/tours/itineraries', [PartnerWebsiteTourController::class, 'storeItinerary'])->name('tours.itineraries.store');
+        Route::delete('{enterprise}/tours/itineraries/{itinerary}', [PartnerWebsiteTourController::class, 'destroyItinerary'])->name('tours.itineraries.destroy');
+        Route::get('{enterprise}/guide-specializations', [PartnerWebsiteGuideController::class, 'index'])->name('guide-specializations');
+        Route::post('{enterprise}/guide-specializations', [PartnerWebsiteGuideController::class, 'store'])->name('guide-specializations.store');
+        Route::delete('{enterprise}/guide-specializations/{specialization}', [PartnerWebsiteGuideController::class, 'destroy'])->name('guide-specializations.destroy');
+        Route::patch('{enterprise}/publish', [PartnerWebsiteController::class, 'publish'])->name('publish');
+        Route::get('{enterprise}/preview', [PartnerWebsiteController::class, 'preview'])->name('preview');
+    });
     Route::get('documents', [PartnerDocumentController::class, 'index'])->name('documents.index');
     Route::patch('services/{enterpriseService}/archive', [PartnerServiceController::class, 'archive'])->name('services.archive');
     Route::resource('services', PartnerServiceController::class)->except(['show', 'destroy'])->parameters(['services' => 'enterpriseService']);
@@ -123,6 +180,7 @@ Route::get('local-product-orders/success/{orderNumber}', [PublicLocalProductOrde
 Route::get('destinations/{destination:slug}', [PublicDestinationController::class, 'show'])->name('destinations.show');
 Route::get('enterprises', [PublicEnterpriseController::class, 'index'])->name('enterprises.index');
 Route::get('enterprises/{enterprise:slug}', [PublicEnterpriseController::class, 'show'])->name('enterprises.show');
+Route::post('enterprises/{enterprise:slug}/website-events', [EnterpriseWebsiteEventController::class, 'store'])->middleware('throttle:60,1')->name('enterprises.website-events.store');
 Route::get('enterprises/{enterprise:slug}/services/{service:slug}', [PublicEnterpriseServiceController::class, 'show'])->scopeBindings()->name('enterprises.services.show');
 Route::post('reservations', [PublicReservationController::class, 'store'])->middleware('throttle:10,1')->name('reservations.store');
 Route::get('reservations/success/{reservationNumber}', [PublicReservationController::class, 'success'])->name('reservations.success');
@@ -133,8 +191,11 @@ Route::post('reviews', [PublicReviewController::class, 'store'])->middleware('th
 
 Route::middleware(['auth', 'role:Administrator,Tourism Staff'])->group(function () {
     Route::get('dashboard', AdminDashboardController::class)->name('dashboard');
+    Route::patch('admin/notifications/read-all', [AdminNotificationController::class, 'readAll'])->name('admin.notifications.read-all');
+    Route::patch('admin/notifications/{notification}/read', [AdminNotificationController::class, 'read'])->name('admin.notifications.read');
+    Route::get('admin/tourism-analytics', AdminEnterpriseWebsiteAnalyticsController::class)->name('admin.tourism-analytics.index');
 
-    Route::resource('admin/users', UserController::class)->names('admin.users');
+    Route::resource('admin/users', UserController::class)->middleware('role:Administrator')->names('admin.users');
     Route::get('admin/tourists', [AdminTouristController::class, 'index'])->name('admin.tourists.index');
     Route::get('admin/tourists/{tourist}', [AdminTouristController::class, 'show'])->name('admin.tourists.show');
     Route::patch('admin/tourists/{tourist}/status', [AdminTouristController::class, 'updateStatus'])
@@ -146,8 +207,8 @@ Route::middleware(['auth', 'role:Administrator,Tourism Staff'])->group(function 
     Route::get('admin/tourist-verifications/{touristVerification}/documents/{document}', [AdminTouristVerificationController::class, 'document'])->whereIn('document', ['front', 'back', 'selfie'])->name('admin.tourist-verifications.document');
     Route::patch('admin/tourist-verifications/{touristVerification}', [AdminTouristVerificationController::class, 'update'])->name('admin.tourist-verifications.update');
     Route::patch('admin/daily-tourist-reports/{dailyTouristReport}', [AdminTouristArrivalController::class, 'updateReport'])->name('admin.daily-tourist-reports.update');
-    Route::resource('admin/roles', RoleController::class)->only(['index', 'store', 'destroy'])->names('admin.roles');
-    Route::get('admin/audit-logs', AuditLogController::class)->name('admin.audit-logs.index');
+    Route::resource('admin/roles', RoleController::class)->only(['index', 'store', 'destroy'])->middleware('role:Administrator')->names('admin.roles');
+    Route::get('admin/audit-logs', AuditLogController::class)->middleware('role:Administrator')->name('admin.audit-logs.index');
     Route::get('admin/reviews', [AdminReviewController::class, 'index'])->name('admin.reviews.index');
     Route::patch('admin/reviews/{review}', [AdminReviewController::class, 'update'])->name('admin.reviews.update');
     Route::get('admin/security-monitoring', SecurityMonitoringController::class)
@@ -167,12 +228,14 @@ Route::middleware(['auth', 'role:Administrator,Tourism Staff'])->group(function 
     Route::get('admin/text', [BannerTextController::class, 'index'])->name('admin.text.index');
     Route::put('admin/text', [BannerTextController::class, 'update'])->name('admin.text.update');
     Route::resource('admin/gallery', GalleryController::class)->names('admin.gallery');
-    Route::resource('admin/footer-settings', FooterSettingController::class)->names('admin.footer-settings');
-    Route::get('admin/settings', SettingsController::class)->name('admin.settings');
-    Route::get('admin/header-settings/create', [HeaderSettingController::class, 'create'])->name('admin.header-settings.create');
-    Route::post('admin/header-settings', [HeaderSettingController::class, 'store'])->name('admin.header-settings.store');
-    Route::get('admin/header-settings/{headerSetting}/edit', [HeaderSettingController::class, 'edit'])->name('admin.header-settings.edit');
-    Route::put('admin/header-settings/{headerSetting}', [HeaderSettingController::class, 'update'])->name('admin.header-settings.update');
+    Route::middleware('role:Administrator')->group(function () {
+        Route::resource('admin/footer-settings', FooterSettingController::class)->names('admin.footer-settings');
+        Route::get('admin/settings', SettingsController::class)->name('admin.settings');
+        Route::get('admin/header-settings/create', [HeaderSettingController::class, 'create'])->name('admin.header-settings.create');
+        Route::post('admin/header-settings', [HeaderSettingController::class, 'store'])->name('admin.header-settings.store');
+        Route::get('admin/header-settings/{headerSetting}/edit', [HeaderSettingController::class, 'edit'])->name('admin.header-settings.edit');
+        Route::put('admin/header-settings/{headerSetting}', [HeaderSettingController::class, 'update'])->name('admin.header-settings.update');
+    });
     Route::resource('admin/announcements', AnnouncementController::class)->names('admin.announcements');
     Route::get('admin/why-visit', [WhyVisitSectionController::class, 'edit'])->name('admin.why-visit.edit');
     Route::put('admin/why-visit', [WhyVisitSectionController::class, 'update'])->name('admin.why-visit.update');

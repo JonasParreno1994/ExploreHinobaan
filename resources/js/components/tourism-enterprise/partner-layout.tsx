@@ -3,13 +3,14 @@ import { PartnerNotificationDropdown } from '@/components/tourism-enterprise/par
 import { Button } from '@/components/ui/button';
 import { SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Building2, CalendarCheck, CalendarDays, FileText, LayoutDashboard, LogOut, Package, ShoppingBag, Users } from 'lucide-react';
+import { Building2, CalendarCheck, CalendarDays, FileText, Globe2, LayoutDashboard, LogOut, Package, ShoppingBag, Users } from 'lucide-react';
 import { ReactNode } from 'react';
 
 const commonLinks = [
     ['Dashboard', 'partner.dashboard', LayoutDashboard],
     ['My Enterprises', 'partner.enterprises.index', Building2],
     ['Documents', 'partner.documents.index', FileText],
+    ['My Website', 'partner.websites.index', Globe2],
 ] as const;
 
 const tourismServiceLinks = [
@@ -36,6 +37,15 @@ export default function PartnerLayout({ children }: { children: ReactNode }) {
         ...arrivalLinks,
         ...(partnerWorkspace?.is_local_product_producer ? productLinks : []),
     ];
+
+    const isActiveLink = (name: string): boolean => {
+        if (name === 'partner.websites.index') {
+            return Boolean(route().current('partner.websites.*'));
+        }
+
+        return Boolean(route().current(name));
+    };
+
     return (
         <div className="min-h-screen bg-[#FFFBF5] text-[#1F2937]">
             <header className="sticky top-0 z-30 border-b border-orange-100 bg-white/95 shadow-sm backdrop-blur">
@@ -57,16 +67,23 @@ export default function PartnerLayout({ children }: { children: ReactNode }) {
             <div className="mx-auto grid max-w-7xl gap-7 px-5 py-8 lg:grid-cols-[240px_1fr]">
                 <aside className="h-fit rounded-3xl border border-orange-100 bg-white p-4 shadow-sm">
                     <p className="px-3 pb-3 text-[10px] font-bold tracking-widest text-[#64748B] uppercase">Partner workspace</p>
-                    {links.map(([label, name, Icon]) => (
-                        <Link
-                            key={name}
-                            href={route(name)}
-                            className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-[#64748B] transition hover:bg-[#FFF3E6] hover:text-[#F97316]"
-                        >
-                            <Icon className="size-5" />
-                            {label}
-                        </Link>
-                    ))}
+                    {links.map(([label, name, Icon]) => {
+                        const isActive = isActiveLink(name);
+
+                        return (
+                            <Link
+                                key={name}
+                                href={route(name)}
+                                aria-current={isActive ? 'page' : undefined}
+                                className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition ${
+                                    isActive ? 'bg-[#0F766E] text-white' : 'text-[#64748B] hover:bg-[#FFF3E6] hover:text-[#F97316]'
+                                }`}
+                            >
+                                <Icon className="size-5" />
+                                {label}
+                            </Link>
+                        );
+                    })}
                     <div className="mt-4 rounded-2xl bg-teal-50 p-4 text-xs leading-5 text-[#0F766E]">
                         <FileText className="mb-2 size-5" />
                         Only your enterprise records are available in this workspace.

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreReservationRequest;
 use App\Models\EnterpriseService;
+use App\Models\EnterpriseWebsiteEvent;
 use App\Models\Reservation;
 use App\Models\ServiceSession;
 use App\Notifications\NewPartnerActivityNotification;
@@ -29,7 +30,7 @@ class ReservationController extends Controller
             if ($reservationFee > 0 && ! $request->hasFile('payment_proof')) {
                 throw ValidationException::withMessages(['payment_proof' => 'Please upload proof that you paid the reservation fee.']);
             }
-            $paymentProofPath = $request->file('payment_proof')?->store('reservations/payment-proofs', 'public');
+            $paymentProofPath = $request->file('payment_proof')?->store('reservations/payment-proofs', 'local');
             $data['adults'] = $data['adults'] ?? $data['number_of_guests'];
             $data['children'] = $data['children'] ?? 0;
             $data['number_of_guests'] = $data['adults'] + $data['children'];
@@ -79,6 +80,12 @@ class ReservationController extends Controller
             reference: $reservation->reservation_number,
             url: route('partner.reservations.show', $reservation),
         ));
+
+        EnterpriseWebsiteEvent::create([
+            'enterprise_id' => $reservation->enterprise_id,
+            'event_type' => 'booking_conversion',
+            'visitor_hash' => hash_hmac('sha256', ($request->ip() ?? '').'|'.mb_substr((string) $request->userAgent(), 0, 500), config('app.key')),
+        ]);
 
         return to_route('reservations.success', $reservation->reservation_number);
     }
