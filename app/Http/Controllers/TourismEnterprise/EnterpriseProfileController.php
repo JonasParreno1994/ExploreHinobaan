@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\TourismEnterprise;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\TourismEnterprise\UpdateCommerceSettingsRequest;
 use App\Http\Requests\TourismEnterprise\UpdatePaymentSettingsRequest;
 use App\Models\Enterprise;
 use Illuminate\Http\RedirectResponse;
@@ -34,11 +35,9 @@ class EnterpriseProfileController extends Controller
         return back()->with('success', 'Payment settings updated.');
     }
 
-    public function updateCommerceSettings(Request $request, Enterprise $enterprise): RedirectResponse
+    public function updateCommerceSettings(UpdateCommerceSettingsRequest $request, Enterprise $enterprise): RedirectResponse
     {
-        abort_unless($enterprise->user_id === $request->user()->id, 403);
-        $data = $request->validate(['accepts_pickup' => ['required', 'boolean'], 'accepts_delivery' => ['required', 'boolean'], 'delivery_fee' => ['required', 'numeric', 'min:0'], 'accepts_cash_on_pickup' => ['required', 'boolean'], 'accepts_gcash' => ['required', 'boolean'], 'estimated_preparation_days' => ['nullable', 'integer', 'min:0', 'max:365']]);
-        $enterprise->orderSetting()->updateOrCreate([], $data);
+        $enterprise->orderSetting()->updateOrCreate([], $request->validated());
 
         return back()->with('success', 'Local product order settings updated.');
     }

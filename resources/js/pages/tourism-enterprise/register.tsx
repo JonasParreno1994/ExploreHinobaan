@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Building2, FileText, LoaderCircle, MapPin, Plus, Trash2, UserRound } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Building2, FileText, LoaderCircle, MapPin, Plus, Trash2, UserRound } from 'lucide-react';
 import { type FormEvent, type ReactNode } from 'react';
 
 interface Option {
@@ -68,6 +68,7 @@ export default function PartnerRegister({ enterpriseTypes, barangays }: { enterp
         documents: [emptyDocument()],
         terms: false,
     });
+    const rateLimitError = (form.errors as Record<string, string | undefined>).throttle;
     function submit(event: FormEvent): void {
         event.preventDefault();
         form.post(route('partner.register.store'), { forceFormData: true });
@@ -106,6 +107,12 @@ export default function PartnerRegister({ enterpriseTypes, barangays }: { enterp
                         Submit your account, business information, location, branding, and legal document for review by the Municipal Tourism Office.
                     </p>
                 </div>
+                {rateLimitError && (
+                    <div role="alert" className="mx-auto mt-6 flex max-w-3xl items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                        <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                        <span>{rateLimitError}</span>
+                    </div>
+                )}
                 <form onSubmit={submit} className="mt-10 grid gap-7">
                     <Section icon={UserRound} title="Partner account" description="These credentials will be used to access your enterprise portal.">
                         <div className="grid gap-5 md:grid-cols-2">

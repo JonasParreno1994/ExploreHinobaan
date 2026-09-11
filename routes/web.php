@@ -103,9 +103,9 @@ Route::middleware(['auth', 'role:Tourist'])->prefix('tourist')->name('tourist.')
 
 Route::prefix('tourism-enterprise')->name('partner.')->group(function () {
     Route::get('login', [PartnerSessionController::class, 'create'])->name('login');
-    Route::post('login', [PartnerSessionController::class, 'store'])->name('login.store');
+    Route::post('login', [PartnerSessionController::class, 'store'])->middleware('throttle:partner-login')->name('login.store');
     Route::get('register', [RegisteredEnterpriseController::class, 'create'])->name('register');
-    Route::post('register', [RegisteredEnterpriseController::class, 'store'])->name('register.store');
+    Route::post('register', [RegisteredEnterpriseController::class, 'store'])->middleware('throttle:partner-registration')->name('register.store');
 });
 
 Route::middleware(['auth', 'role:Tourism Enterprise'])->prefix('tourism-enterprise')->name('partner.')->group(function () {

@@ -13,7 +13,7 @@ class LocalProductOrder extends Model
     /** @use HasFactory<LocalProductOrderFactory> */
     use HasFactory;
 
-    protected $fillable = ['order_number', 'enterprise_id', 'customer_id', 'customer_name', 'customer_email', 'customer_contact', 'fulfillment_method', 'delivery_address', 'subtotal', 'delivery_fee', 'total_amount', 'payment_method', 'payment_status', 'payment_proof_path', 'status', 'customer_notes', 'producer_notes', 'rejection_reason', 'confirmed_at', 'completed_at'];
+    protected $fillable = ['order_number', 'enterprise_id', 'customer_id', 'customer_name', 'customer_email', 'customer_contact', 'fulfillment_method', 'delivery_address', 'subtotal', 'delivery_fee', 'total_amount', 'payment_method', 'payment_status', 'payment_proof_path', 'status', 'customer_notes', 'producer_notes', 'rejection_reason', 'estimated_ready_at', 'confirmed_at', 'completed_at'];
 
     protected $attributes = ['status' => 'pending', 'payment_status' => 'unpaid'];
 
@@ -36,7 +36,7 @@ class LocalProductOrder extends Model
 
     protected function casts(): array
     {
-        return ['subtotal' => 'decimal:2', 'delivery_fee' => 'decimal:2', 'total_amount' => 'decimal:2', 'confirmed_at' => 'datetime', 'completed_at' => 'datetime'];
+        return ['subtotal' => 'decimal:2', 'delivery_fee' => 'decimal:2', 'total_amount' => 'decimal:2', 'estimated_ready_at' => 'datetime', 'confirmed_at' => 'datetime', 'completed_at' => 'datetime'];
     }
 
     protected function getPaymentProofUrlAttribute(): ?string

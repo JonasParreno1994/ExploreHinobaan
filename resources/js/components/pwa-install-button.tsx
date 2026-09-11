@@ -33,7 +33,11 @@ export function PwaInstallButton() {
         window.addEventListener('beforeinstallprompt', capturePrompt);
         window.addEventListener('appinstalled', installed);
         const removeNavigateListener = router.on('navigate', (event) => {
-            setIsInteractiveMap(event.detail.page.component === 'interactive-map');
+            const component = event.detail?.page?.component;
+
+            if (component) {
+                setIsInteractiveMap(component === 'interactive-map');
+            }
         });
 
         return () => {

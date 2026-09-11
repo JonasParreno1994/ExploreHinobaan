@@ -40,8 +40,6 @@ class EnterpriseController extends Controller
     public function show(Request $request, Enterprise $enterprise, ReviewPresenter $reviews): Response
     {
         abort_unless($enterprise->application_status === 'approved', 404);
-        $hasWebsiteDraft = $enterprise->microsite()->exists();
-
         $enterprise->load([
             'enterpriseType:id,name', 'barangay:id,name', 'galleryImages', 'socialLinks',
             'microsite' => fn ($query) => $query->where('is_published', true),
@@ -60,9 +58,6 @@ class EnterpriseController extends Controller
             $enterprise->setRelation('tourPackages', collect());
             $enterprise->setRelation('guideSpecializations', collect());
 
-            if ($hasWebsiteDraft) {
-                $enterprise->setRelation('localProducts', collect());
-            }
         } elseif ($enterprise->microsite->published_snapshot) {
             $snapshot = $enterprise->microsite->published_snapshot;
             $enterprise->microsite->forceFill($snapshot['website'] ?? []);

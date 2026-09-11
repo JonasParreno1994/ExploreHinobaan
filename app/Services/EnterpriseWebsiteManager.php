@@ -28,6 +28,14 @@ class EnterpriseWebsiteManager
             403,
         );
 
+        $website = $this->initializeFoundation($enterprise);
+
+        return $website->load('enterprise.sections', 'enterprise.galleryImages', 'enterprise.socialLinks');
+    }
+
+    public function initializeFoundation(Enterprise $enterprise): EnterpriseWebsite
+    {
+        $enterprise->loadMissing('enterpriseType:id,name,status,website_modules');
         $website = $enterprise->microsite()->firstOrCreate();
         foreach (self::SECTIONS as $type => $defaults) {
             $enterprise->sections()->firstOrCreate(['section_type' => $type], $defaults);
@@ -40,7 +48,7 @@ class EnterpriseWebsiteManager
         }
         $enterprise->setAttribute('website_modules', $this->modules->forEnterprise($enterprise));
 
-        return $website->load('enterprise.sections', 'enterprise.galleryImages', 'enterprise.socialLinks');
+        return $website;
     }
 
     /** @return array<string, array{title: string, sort_order: int}> */

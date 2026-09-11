@@ -112,3 +112,65 @@ test('tourist cannot order more than available stock', function () {
     $this->post(route('local-product-orders.store'), ['product_id' => $product->id, 'quantity' => 2, 'customer_name' => 'Tourist Guest', 'customer_email' => 'tourist@example.com', 'customer_contact' => '09123456789', 'fulfillment_method' => 'pickup', 'payment_method' => 'cash_on_pickup'])->assertSessionHasErrors('quantity');
     expect(LocalProductOrder::query()->count())->toBe(0)->and($product->refresh()->stock_quantity)->toBe(1);
 });
+
+test('checkout rejects seller-disabled fulfillment and payment methods', function (array $settings, array $override, string $errorField) {
+    [, $enterprise, $category] = localProductContext();
+    EnterpriseOrderSetting::create(['enterprise_id' => $enterprise->id, ...$settings]);
+    $product = LocalProduct::create(['enterprise_id' => $enterprise->id, 'product_category_id' => $category->id, 'name' => 'Seller Policy Product', 'slug' => fake()->unique()->slug(), 'description' => 'Policy test', 'price' => 100, 'selling_unit' => 'piece', 'stock_quantity' => 5, 'status' => 'published']);
+    $payload = ['product_id' => $product->id, 'quantity' => 1, 'customer_name' => 'Tourist Guest', 'customer_email' => 'tourist@example.com', 'customer_contact' => '09123456789', 'fulfillment_method' => 'pickup', 'payment_method' => 'cash_on_pickup', ...$override];
+
+    $this->post(route('local-product-orders.store'), $payload)->assertSessionHasErrors($errorField);
+
+    expect(LocalProductOrder::query()->count())->toBe(0)->and($product->refresh()->stock_quantity)->toBe(5);
+})->with([
+    'pickup disabled' => [['accepts_pickup' => false, 'accepts_delivery' => true, 'accepts_cash_on_pickup' => true], [], 'fulfillment_method'],
+    'cash on pickup disabled' => [['accepts_pickup' => true, 'accepts_cash_on_pickup' => false, 'accepts_gcash' => true], [], 'payment_method'],
+]);
+
+test('checkout enforces minimum amount, stock availability, and preparation time', function () {
+    [, $enterprise, $category] = localProductContext();
+    Notification::fake();
+    EnterpriseOrderSetting::create(['enterprise_id' => $enterprise->id, 'minimum_order_amount' => 200, 'estimated_preparation_days' => 3]);
+    $product = LocalProduct::create(['enterprise_id' => $enterprise->id, 'product_category_id' => $category->id, 'name' => 'Prepared Product', 'slug' => 'prepared-product', 'description' => 'Prepared product', 'price' => 100, 'selling_unit' => 'piece', 'stock_quantity' => 2, 'preparation_days' => 5, 'status' => 'published']);
+    $payload = ['product_id' => $product->id, 'quantity' => 1, 'customer_name' => 'Tourist Guest', 'customer_email' => 'tourist@example.com', 'customer_contact' => '09123456789', 'fulfillment_method' => 'pickup', 'payment_method' => 'cash_on_pickup'];
+
+    $this->post(route('local-product-orders.store'), $payload)->assertSessionHasErrors('quantity');
+    $this->post(route('local-product-orders.store'), [...$payload, 'quantity' => 2])->assertSessionHasNoErrors();
+
+    $order = LocalProductOrder::firstOrFail();
+    expect($order->estimated_ready_at->isSameDay(now()->addDays(5)))->toBeTrue()
+        ->and($product->refresh()->stock_quantity)->toBe(0);
+
+    $this->post(route('local-product-orders.store'), $payload)->assertSessionHasErrors('quantity');
+});
+
+test('seller cancellation and refund policies are enforced', function () {
+    [$owner, $enterprise] = localProductContext();
+    $settings = EnterpriseOrderSetting::create(['enterprise_id' => $enterprise->id, 'allows_order_cancellation' => false, 'allows_refunds' => false]);
+    $order = LocalProductOrder::create(['order_number' => 'HIN-PROD-POLICY', 'enterprise_id' => $enterprise->id, 'customer_name' => 'Tourist Guest', 'customer_email' => 'tourist@example.com', 'customer_contact' => '09123456789', 'fulfillment_method' => 'pickup', 'subtotal' => 100, 'delivery_fee' => 0, 'total_amount' => 100, 'payment_method' => 'cash_on_pickup', 'payment_status' => 'verified', 'status' => 'accepted']);
+
+    $this->actingAs($owner)->patch(route('partner.product-orders.update', $order), ['status' => 'cancelled'])->assertSessionHasErrors('status');
+    $this->actingAs($owner)->patch(route('partner.product-orders.update', $order), ['payment_status' => 'refunded'])->assertSessionHasErrors('payment_status');
+
+    $settings->update(['allows_order_cancellation' => true, 'cancellation_window_hours' => 1, 'allows_refunds' => true, 'refund_window_days' => 1]);
+    $order->update(['created_at' => now()->subDays(2), 'completed_at' => now()->subDays(2), 'status' => 'completed']);
+    $this->actingAs($owner)->patch(route('partner.product-orders.update', $order), ['payment_status' => 'refunded'])->assertSessionHasErrors('payment_status');
+});
+
+test('commerce settings require a fulfillment and payment method', function () {
+    [$owner, $enterprise] = localProductContext();
+
+    $this->actingAs($owner)->post(route('partner.enterprises.commerce-settings', $enterprise), [
+        'accepts_pickup' => false,
+        'accepts_delivery' => false,
+        'delivery_fee' => 0,
+        'minimum_order_amount' => null,
+        'accepts_cash_on_pickup' => false,
+        'accepts_gcash' => false,
+        'estimated_preparation_days' => null,
+        'allows_order_cancellation' => true,
+        'cancellation_window_hours' => 24,
+        'allows_refunds' => false,
+        'refund_window_days' => 7,
+    ])->assertSessionHasErrors(['accepts_pickup', 'accepts_cash_on_pickup']);
+});

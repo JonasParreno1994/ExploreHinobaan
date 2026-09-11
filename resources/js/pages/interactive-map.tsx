@@ -498,16 +498,16 @@ export default function InteractiveMap({ places }: { places: Place[] }) {
                         </Marker>
                     ))}
                 </MapContainer>
-                <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
+                <div data-testid="map-controls" className="absolute top-20 left-2.5 z-[1000] flex flex-col gap-2">
                     <button
                         type="button"
+                        aria-label={locating ? 'Locating your position' : 'Show my location'}
                         title="Show my location and route line"
                         onClick={locateVisitor}
                         disabled={locating}
-                        className="flex h-11 items-center gap-2 rounded-xl bg-[#0284C7] px-3 text-sm font-bold text-white shadow-lg transition hover:bg-sky-700 disabled:cursor-wait disabled:opacity-70"
+                        className="flex size-11 items-center justify-center rounded-xl bg-[#0284C7] text-white shadow-lg transition hover:bg-sky-700 disabled:cursor-wait disabled:opacity-70"
                     >
                         <LocateFixed className={`size-5 ${locating ? 'animate-pulse' : ''}`} />
-                        {locating ? 'Locating...' : 'My Location'}
                     </button>
                     <button
                         type="button"
@@ -540,14 +540,11 @@ export default function InteractiveMap({ places }: { places: Place[] }) {
                 {locationMessage && (
                     <div
                         role="status"
-                        className="absolute top-4 left-4 z-[1000] max-w-[min(75vw,360px)] rounded-xl bg-white/95 px-4 py-3 text-sm font-semibold text-[#1F2937] shadow-lg backdrop-blur"
+                        className="absolute top-4 right-4 z-[1000] max-w-[min(75vw,360px)] rounded-xl bg-white/95 px-4 py-3 text-sm font-semibold text-[#1F2937] shadow-lg backdrop-blur"
                     >
                         {locationMessage}
                     </div>
                 )}
-                <div className="absolute bottom-6 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-white/95 px-4 py-2 text-xs font-bold shadow-lg backdrop-blur">
-                    Showing {filteredPlaces.length} mapped place{filteredPlaces.length === 1 ? '' : 's'}
-                </div>
             </section>
 
             {directionsOpen && focusedPlace && (

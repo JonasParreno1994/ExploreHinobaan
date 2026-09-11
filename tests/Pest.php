@@ -1,5 +1,9 @@
 <?php
 
+pest()->extend('Tests\\DuskTestCase')
+    ->use('Illuminate\\Foundation\\Testing\\DatabaseMigrations')
+    ->in('Browser');
+
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

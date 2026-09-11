@@ -44,6 +44,23 @@ test('a linked account without the tourism enterprise role cannot use the partne
     $this->assertGuest();
 });
 
+test('tourism enterprise login submissions are rate limited', function () {
+    $request = fn () => $this->from(route('partner.login'))->withServerVariables(['REMOTE_ADDR' => '203.0.113.10'])
+        ->post(route('partner.login.store'), [
+            'email' => 'unknown-enterprise@example.com',
+            'password' => 'incorrect-password',
+        ]);
+
+    foreach (range(1, 5) as $attempt) {
+        $request()->assertInvalid(['email']);
+    }
+
+    $request()
+        ->assertRedirect(route('partner.login'))
+        ->assertSessionHasErrors(['throttle' => 'Too many sign-in attempts. Please wait one minute and try again.'])
+        ->assertHeader('Retry-After');
+});
+
 test('partner dashboard lists only the authenticated users enterprises', function () {
     $user = User::factory()->for(Role::factory()->create(['name' => 'Tourism Enterprise']))->create();
     $enterprise = Enterprise::factory()->for($user)->create(['business_name' => 'Partner Resort']);

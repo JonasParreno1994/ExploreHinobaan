@@ -5,11 +5,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Building2, CheckCircle2, Eye, EyeOff, LoaderCircle, LockKeyhole, Mail, TrendingUp, Users } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Building2, CheckCircle2, Eye, EyeOff, LoaderCircle, LockKeyhole, Mail, TrendingUp, Users } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 
 export default function PartnerLogin({ status, canResetPassword }: { status?: string; canResetPassword: boolean }) {
     const form = useForm({ email: '', password: '', remember: false });
+    const rateLimitError = (form.errors as Record<string, string | undefined>).throttle;
     const [showPassword, setShowPassword] = useState(false);
     function submit(event: FormEvent): void {
         event.preventDefault();
@@ -63,6 +64,12 @@ export default function PartnerLogin({ status, canResetPassword }: { status?: st
                         <p className="mt-2 text-[#64748B]">Sign in to your partner account</p>
                     </div>
                     {status && <p className="mt-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700">{status}</p>}
+                    {rateLimitError && (
+                        <div role="alert" className="mt-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                            <span>{rateLimitError}</span>
+                        </div>
+                    )}
                     <form onSubmit={submit} className="mt-8 grid gap-5">
                         <div className="grid gap-2">
                             <Label htmlFor="email">Email address</Label>
