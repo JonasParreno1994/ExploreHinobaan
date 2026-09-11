@@ -137,3 +137,14 @@ test('interactive map opens directions inside the application with a Google Maps
         ->toContain('Start in Google Maps')
         ->not->toContain('href={`https://www.google.com/maps/dir/?api=1&destination=${place.latitude},${place.longitude}`}');
 });
+
+test('interactive map controls are positioned below the upper-left zoom control', function () {
+    $mapPage = file_get_contents(resource_path('js/pages/interactive-map.tsx'));
+
+    expect($mapPage)
+        ->toContain('data-testid="map-controls" className="absolute top-20 left-2.5')
+        ->toContain("aria-label={locating ? 'Locating your position' : 'Show my location'}")
+        ->not->toContain('data-testid="map-controls" className="absolute top-4 right-4')
+        ->not->toContain("{locating ? 'Locating...' : 'My Location'}")
+        ->not->toContain('mapped place{filteredPlaces.length === 1');
+});

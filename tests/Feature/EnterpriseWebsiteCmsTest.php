@@ -236,6 +236,25 @@ test('published local seller products remain visible before a website cms record
         ->where('enterprise.local_products.0.name', 'Daisy Product'));
 });
 
+test('published local seller products remain visible while the website cms is a draft', function () {
+    $type = EnterpriseType::factory()->create(['name' => 'Local Product Seller']);
+    $enterprise = Enterprise::factory()->for($type)->create(['application_status' => 'approved']);
+    $category = ProductCategory::factory()->create(['name' => 'Food', 'slug' => 'draft-site-food', 'status' => 'active']);
+    EnterpriseWebsite::factory()->for($enterprise)->create(['is_published' => false]);
+    LocalProduct::factory()->for($enterprise)->for($category, 'category')->create([
+        'status' => 'published',
+        'name' => 'Daisy Product',
+        'slug' => 'daisy-product-with-draft-site',
+        'description' => 'A published product managed outside the website draft.',
+        'price' => 150,
+    ]);
+
+    $this->get(route('enterprises.show', $enterprise))->assertSuccessful()->assertInertia(fn (Assert $page) => $page
+        ->where('enterprise.microsite', null)
+        ->has('enterprise.local_products', 1)
+        ->where('enterprise.local_products.0.name', 'Daisy Product'));
+});
+
 test('public enterprise page is composed from reusable microsite sections', function () {
     $source = file_get_contents(resource_path('js/pages/enterprises/show.tsx'));
 
@@ -247,6 +266,19 @@ test('public enterprise page is composed from reusable microsite sections', func
         ->toContain('<EnterpriseFooter enterprise={enterprise} />')
         ->not->toContain('About the Enterprise');
     expect($source)->toContain('defaultHomepageBlocks')->not->toContain('Object.entries(sectionComponents)');
+});
+
+test('homepage builder identifies authoritative content sources', function () {
+    $source = file_get_contents(resource_path('js/pages/tourism-enterprise/websites/home.tsx'));
+
+    expect($source)
+        ->toContain('One source for every business record')
+        ->toContain('Manage Content in {destination.label}')
+        ->toContain("builder_rooms: 'rooms'")
+        ->toContain("builder_products: { href: route('partner.products.index')")
+        ->toContain("builder_menu: { href: route('partner.websites.menu'")
+        ->toContain("builder_tour_packages: { href: route('partner.websites.tours'")
+        ->not->toContain("['builder_hero', 'builder_about'].includes(section.section_type)");
 });
 
 test('unsupported template and unsafe website content are rejected', function () {

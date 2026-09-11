@@ -58,9 +58,12 @@ test('the install action is mounted across application pages and only appears wh
 
     expect($application)
         ->toContain('<PwaInstallButton />')
+        ->toContain('event.detail?.page?.props?.branding')
         ->and($installButton)
         ->toContain("router.on('navigate'")
-        ->toContain("event.detail.page.component === 'interactive-map'")
+        ->toContain('event.detail?.page?.component')
+        ->toContain("setIsInteractiveMap(component === 'interactive-map')")
+        ->not->toContain('event.detail.page')
         ->toContain('if (isInteractiveMap ||')
         ->not->toContain('usePage')
         ->toContain('await installPrompt.prompt();')

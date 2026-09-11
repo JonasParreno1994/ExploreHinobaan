@@ -73,6 +73,20 @@ test('enterprise registration requires a legal document and accepted declaration
         ->assertInvalid(['documents', 'terms']);
 });
 
+test('tourism enterprise registration submissions are rate limited', function () {
+    $request = fn () => $this->from(route('partner.register'))->withServerVariables(['REMOTE_ADDR' => '203.0.113.11'])
+        ->post(route('partner.register.store'));
+
+    foreach (range(1, 3) as $attempt) {
+        $request()->assertInvalid(['name', 'account_email', 'documents', 'terms']);
+    }
+
+    $request()
+        ->assertRedirect(route('partner.register'))
+        ->assertSessionHasErrors(['throttle' => 'Too many registration attempts. Please wait before submitting another application.'])
+        ->assertHeader('Retry-After');
+});
+
 test('new enterprise applications notify administrators in the dashboard bell', function () {
     Storage::fake('public');
     Storage::fake('local');

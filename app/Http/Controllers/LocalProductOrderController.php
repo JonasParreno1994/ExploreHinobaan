@@ -23,16 +23,30 @@ class LocalProductOrderController extends Controller
             $product = LocalProduct::query()->with('enterprise.orderSetting')->lockForUpdate()->findOrFail($request->integer('product_id'));
             abort_unless($product->status === 'published' && $product->enterprise->application_status === 'approved', 404);
             $data = $request->validated();
-            if (! $product->is_made_to_order && $data['quantity'] > $product->stock_quantity) {
+            if (! $product->is_made_to_order && ($product->stock_quantity < 1 || $data['quantity'] > $product->stock_quantity)) {
                 throw ValidationException::withMessages(['quantity' => "Only {$product->stock_quantity} item(s) are available."]);
             }
             $settings = $product->enterprise->orderSetting()->firstOrCreate([]);
-            abort_if($data['fulfillment_method'] === 'delivery' && ! $settings->accepts_delivery, 422);
-            abort_if($data['payment_method'] === 'gcash' && ! $settings->accepts_gcash, 422);
+            if ($data['fulfillment_method'] === 'pickup' && ! $settings->accepts_pickup) {
+                throw ValidationException::withMessages(['fulfillment_method' => 'Pickup is not available for this seller.']);
+            }
+            if ($data['fulfillment_method'] === 'delivery' && ! $settings->accepts_delivery) {
+                throw ValidationException::withMessages(['fulfillment_method' => 'Delivery is not available for this seller.']);
+            }
+            if ($data['payment_method'] === 'cash_on_pickup' && ! $settings->accepts_cash_on_pickup) {
+                throw ValidationException::withMessages(['payment_method' => 'Cash on pickup is not available for this seller.']);
+            }
+            if ($data['payment_method'] === 'gcash' && ! $settings->accepts_gcash) {
+                throw ValidationException::withMessages(['payment_method' => 'GCash is not available for this seller.']);
+            }
             $subtotal = round((float) $product->price * $data['quantity'], 2);
+            if ($settings->minimum_order_amount !== null && $subtotal < (float) $settings->minimum_order_amount) {
+                throw ValidationException::withMessages(['quantity' => 'The minimum order amount is ₱'.number_format((float) $settings->minimum_order_amount, 2).'.']);
+            }
             $deliveryFee = $data['fulfillment_method'] === 'delivery' ? (float) $settings->delivery_fee : 0;
+            $preparationDays = max((int) ($settings->estimated_preparation_days ?? 0), (int) ($product->preparation_days ?? 0));
             $proof = $request->file('payment_proof')?->store('local-product-orders/payment-proofs', 'local');
-            $order = LocalProductOrder::create(['order_number' => 'HIN-PROD-'.now()->format('Y').'-'.Str::upper(Str::random(8)), 'enterprise_id' => $product->enterprise_id, 'customer_id' => $request->user()?->id, 'customer_name' => $data['customer_name'], 'customer_email' => $data['customer_email'], 'customer_contact' => $data['customer_contact'], 'fulfillment_method' => $data['fulfillment_method'], 'delivery_address' => $data['delivery_address'] ?? null, 'subtotal' => $subtotal, 'delivery_fee' => $deliveryFee, 'total_amount' => $subtotal + $deliveryFee, 'payment_method' => $data['payment_method'], 'payment_status' => $proof ? 'pending_verification' : 'unpaid', 'payment_proof_path' => $proof, 'customer_notes' => $data['customer_notes'] ?? null]);
+            $order = LocalProductOrder::create(['order_number' => 'HIN-PROD-'.now()->format('Y').'-'.Str::upper(Str::random(8)), 'enterprise_id' => $product->enterprise_id, 'customer_id' => $request->user()?->id, 'customer_name' => $data['customer_name'], 'customer_email' => $data['customer_email'], 'customer_contact' => $data['customer_contact'], 'fulfillment_method' => $data['fulfillment_method'], 'delivery_address' => $data['delivery_address'] ?? null, 'subtotal' => $subtotal, 'delivery_fee' => $deliveryFee, 'total_amount' => $subtotal + $deliveryFee, 'payment_method' => $data['payment_method'], 'payment_status' => $proof ? 'pending_verification' : 'unpaid', 'payment_proof_path' => $proof, 'customer_notes' => $data['customer_notes'] ?? null, 'estimated_ready_at' => $preparationDays > 0 ? now()->addDays($preparationDays) : now()]);
             $order->items()->create(['local_product_id' => $product->id, 'product_name' => $product->name, 'quantity' => $data['quantity'], 'unit' => $product->selling_unit, 'unit_price' => $product->price, 'subtotal' => $subtotal]);
             if (! $product->is_made_to_order) {
                 $product->decrement('stock_quantity', $data['quantity']);

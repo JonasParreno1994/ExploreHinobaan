@@ -36,7 +36,7 @@ createInertiaApp({
 
         updateFavicon(initialBranding?.logo_url);
         router.on('navigate', (event) => {
-            const branding = event.detail.page.props.branding as { logo_url?: unknown } | null | undefined;
+            const branding = event.detail?.page?.props?.branding as { logo_url?: unknown } | null | undefined;
             updateFavicon(branding?.logo_url);
         });
 

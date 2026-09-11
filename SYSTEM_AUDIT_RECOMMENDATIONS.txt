@@ -325,3 +325,173 @@ SUGGESTED IMPLEMENTATION ORDER
 8. Commerce validation and database constraints
 9. Image optimization and accessibility
 10. Analytics and SEO improvements
+
+
+SYSTEM RE-AUDIT - CURRENT FINDINGS
+==================================
+
+The system is now feature-rich and its main Laravel architecture is generally
+sound. Before adding more major modules, development should focus on publishing
+integrity, consistent authorization, browser testing, workflow rules, and
+frontend maintainability.
+
+Latest automated verification:
+
+- 273 tests passed
+- 1,990 assertions passed
+
+
+CURRENT HIGHEST-PRIORITY CHANGES
+================================
+
+1. Complete Draft and Publish isolation
+
+Publishing currently snapshots the website appearance, SEO settings, and
+homepage sections. Gallery images, social links, menus, tours, products,
+services, and other specialized content are still read from their current
+records.
+
+This means some edits can affect the public microsite without using Publish
+Changes. Snapshot or version every website-managed marketing record, or add a
+consistent draft/published state to those records.
+
+
+2. Fix the Homepage Section Manager contract
+
+The CMS allows enterprises to change section titles and subtitles, but public
+microsite components generally render fixed headings. Saved headings therefore
+do not consistently appear on the public website.
+
+Either pass the configured title, subtitle, and content into every public
+section component or remove inputs that have no visible effect.
+
+
+3. Make the module matrix authoritative everywhere
+
+Some specialized controllers still check exact enterprise type names such as
+Cafe, Restaurant, Tour Guide, or Tour Operator. This weakens the flexible
+Administrator-managed module matrix and makes future enterprise types harder to
+support.
+
+All module navigation, forms, routes, and backend authorization should use the
+EnterpriseWebsiteModuleRegistry capability checks.
+
+
+4. Finish browser-test configuration
+
+Feature tests pass, but the browser-test environment previously failed because
+its SQLite database did not contain required tables such as banners.
+
+Add a repeatable browser-test workflow with:
+
+- A dedicated .env.dusk.local configuration
+- Automatic test database migration
+- ChromeDriver and application server startup
+- Browser tests in continuous integration
+- Direct-navigation and refresh coverage for public, partner, and admin pages
+
+
+5. Improve analytics integrity
+
+The analytics endpoint validates event types and is throttled, but clients can
+still submit arbitrary target IDs and labels. This can distort most-viewed
+reports.
+
+Add:
+
+- Validation that the target belongs to the requested enterprise
+- Duplicate-event suppression
+- Bot and crawler filtering
+- A defined analytics retention period
+- Aggregation of older raw events
+
+
+6. Centralize workflow transitions
+
+Reservation and product-order status transitions are spread across multiple
+controllers. Move allowed transitions and side effects into enums, actions, or
+workflow services so inventory, notifications, analytics, and audit history
+remain consistent.
+
+
+FEATURES WORTH ADDING
+=====================
+
+- A unified Administrator Action Center for pending enterprises, tourist
+  verification, payment proofs, reviews, incidents, and overdue reservations
+- Scheduled database backups with automated restore testing
+- Queue failure, storage, database, and uptime monitoring
+- PHP static analysis and a TypeScript type-checking CI step
+- Automated accessibility tests for forms, modals, map controls, and navigation
+- WebP/AVIF conversion, thumbnails, and responsive images
+- Audit-history screens for verification, payments, workflow transitions, and
+  website publishing
+- Signed or access-token-based reservation and order result URLs
+- A visible last-published date and unpublished-changes indicator
+- Enterprise-type-specific website completion warnings
+- Expiring draft-preview links for Tourism Office review
+
+
+FEATURES AND DUPLICATION TO OMIT OR CONSOLIDATE
+===============================================
+
+1. Do not create duplicate operational content
+
+Rooms, services, products, menus, tours, and activities should each have one
+authoritative data source. My Website should control visibility, presentation,
+ordering, and featured selection instead of copying the records.
+
+
+2. Do not display two enterprise sidebars
+
+Keep one Partner Workspace sidebar. My Website should be an expandable section
+or use nested navigation within the same sidebar.
+
+
+3. Remove ineffective CMS fields
+
+If a configurable heading, subtitle, or content field is not rendered on the
+public microsite, connect it to the public component or remove it.
+
+
+4. Avoid premature specialized modules
+
+Do not add new tables for Dive Center, Transport Provider, Farm Tourism Site,
+or other future types until reusable modules and the feature matrix cannot
+represent their requirements.
+
+
+5. Decide whether product ordering supports a cart
+
+The workflow is primarily single-product even though an order-items structure
+exists. Either implement genuine multi-product cart checkout or simplify and
+clearly label the workflow as single-product ordering.
+
+
+6. Clarify manual refunds
+
+If no payment provider confirms a refund, use the label Marked as Refunded and
+require notes, an external reference, the responsible user, and a timestamp.
+
+
+MAINTAINABILITY CLEANUP
+=======================
+
+Several frontend files are large and should be divided into focused components
+and hooks:
+
+- resources/js/pages/welcome.tsx: approximately 1,034 lines
+- resources/js/pages/interactive-map.tsx: approximately 692 lines
+- resources/js/pages/tourism-enterprise/register.tsx: approximately 507 lines
+- resources/js/components/enterprise-microsite/enterprise-sections.tsx:
+  approximately 419 lines
+
+Gradually replace remaining TypeScript any types with shared DTOs matching the
+Laravel/Inertia response structures.
+
+Fix the preview-banner character encoding issue that displays an incorrect
+extra character before the separator in resources/js/pages/enterprises/show.tsx.
+
+Before deployment, divide the current uncommitted changes into focused commits
+and verify migrations, the production frontend build, feature tests, and browser
+tests from a clean checkout.

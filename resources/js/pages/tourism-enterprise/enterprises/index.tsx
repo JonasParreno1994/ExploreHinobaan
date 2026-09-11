@@ -26,9 +26,14 @@ interface Enterprise {
         accepts_pickup: boolean;
         accepts_delivery: boolean;
         delivery_fee: string;
+        minimum_order_amount: string | null;
         accepts_cash_on_pickup: boolean;
         accepts_gcash: boolean;
         estimated_preparation_days: number | null;
+        allows_order_cancellation: boolean;
+        cancellation_window_hours: number | null;
+        allows_refunds: boolean;
+        refund_window_days: number | null;
     } | null;
 }
 
@@ -138,9 +143,14 @@ function CommerceSettings({ enterprise }: { enterprise: Enterprise }) {
         accepts_pickup: setting?.accepts_pickup ?? true,
         accepts_delivery: setting?.accepts_delivery ?? false,
         delivery_fee: setting?.delivery_fee ?? '0',
+        minimum_order_amount: setting?.minimum_order_amount ?? '',
         accepts_cash_on_pickup: setting?.accepts_cash_on_pickup ?? true,
         accepts_gcash: setting?.accepts_gcash ?? false,
         estimated_preparation_days: setting?.estimated_preparation_days ?? '',
+        allows_order_cancellation: setting?.allows_order_cancellation ?? true,
+        cancellation_window_hours: setting?.cancellation_window_hours ?? 24,
+        allows_refunds: setting?.allows_refunds ?? false,
+        refund_window_days: setting?.refund_window_days ?? 7,
     });
     return (
         <form
@@ -176,6 +186,14 @@ function CommerceSettings({ enterprise }: { enterprise: Enterprise }) {
                     <input type="checkbox" checked={form.data.accepts_gcash} onChange={(e) => form.setData('accepts_gcash', e.target.checked)} />{' '}
                     Accept GCash
                 </label>
+                <label className="flex gap-2 text-sm font-semibold">
+                    <input type="checkbox" checked={form.data.allows_order_cancellation} onChange={(e) => form.setData('allows_order_cancellation', e.target.checked)} />{' '}
+                    Allow order cancellation
+                </label>
+                <label className="flex gap-2 text-sm font-semibold">
+                    <input type="checkbox" checked={form.data.allows_refunds} onChange={(e) => form.setData('allows_refunds', e.target.checked)} />{' '}
+                    Allow refunds
+                </label>
                 <label className="text-sm font-semibold">
                     Delivery fee
                     <input
@@ -188,6 +206,10 @@ function CommerceSettings({ enterprise }: { enterprise: Enterprise }) {
                     />
                 </label>
                 <label className="text-sm font-semibold">
+                    Minimum order amount
+                    <input type="number" min="0" step="0.01" value={form.data.minimum_order_amount} onChange={(e) => form.setData('minimum_order_amount', e.target.value)} className="mt-1 h-10 w-full rounded-lg border bg-white px-3" />
+                </label>
+                <label className="text-sm font-semibold">
                     Preparation days
                     <input
                         type="number"
@@ -197,7 +219,16 @@ function CommerceSettings({ enterprise }: { enterprise: Enterprise }) {
                         className="mt-1 h-10 w-full rounded-lg border bg-white px-3"
                     />
                 </label>
+                <label className="text-sm font-semibold">
+                    Cancellation window (hours)
+                    <input type="number" min="1" value={form.data.cancellation_window_hours} disabled={!form.data.allows_order_cancellation} onChange={(e) => form.setData('cancellation_window_hours', e.target.value)} className="mt-1 h-10 w-full rounded-lg border bg-white px-3 disabled:opacity-50" />
+                </label>
+                <label className="text-sm font-semibold">
+                    Refund window (days)
+                    <input type="number" min="1" value={form.data.refund_window_days} disabled={!form.data.allows_refunds} onChange={(e) => form.setData('refund_window_days', e.target.value)} className="mt-1 h-10 w-full rounded-lg border bg-white px-3 disabled:opacity-50" />
+                </label>
             </div>
+            {Object.values(form.errors).map((error) => <p key={error} className="mt-2 text-sm font-semibold text-red-600">{error}</p>)}
             <button disabled={form.processing} className="mt-3 rounded-lg bg-[#0F766E] px-4 py-2 text-sm font-bold text-white">
                 Save order settings
             </button>
